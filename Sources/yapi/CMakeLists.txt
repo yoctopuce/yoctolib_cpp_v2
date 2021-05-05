@@ -1,7 +1,43 @@
-add_library (YAPI STATIC yfifo.c yhash.c ykey.c yjson.c ymemory.c ythread.c yapi.c ystream.c ytcp.c yprog.c ypkt_win.c ypkt_lin.c ypkt_osx.c yssl.c)
+option(USE_YSSL "Include SSL/TLS support" OFF)
 
-target_include_directories (YAPI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(USE_YSSL)
+else()
+add_compile_definitions(NO_YSSL)
+endif()
 
+set(YAPI_C_FILES
+	yapi.c
+	ystream.c
+	yprog.c
+	yfifo.c
+	ykey.c
+	yhash.c
+	yjson.c
+	ytcp.c
+	ymemory.c
+	ythread.c
+	yjni.c
+	ypkt_win.c
+	ypkt_osx.c
+	ypkt_lin.c
+	yssl.c
+)
+
+add_library (yapi  ${YAPI_C_FILES})
+
+# add pthread usb-1.0 library only on linux
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-target_link_libraries (YAPI LINK_PUBLIC pthread usb-1.0)
+target_link_libraries (yapi LINK_PUBLIC pthread usb-1.0)
+endif()
+
+if (APPLE)
+	find_library(CORE_FRAMEWORK CoreFoundation)
+	if (NOT CORE_FRAMEWORK)
+	    message(FATAL_ERROR "CoreFoundation not found")
+	endif()
+	find_library(IOKIT_FRAMEWORK IOKit)
+	if (NOT IOKIT_FRAMEWORK)
+	    message(FATAL_ERROR "IOKit not found")
+	endif()
+	target_link_libraries(yapi ${IOKIT_FRAMEWORK} ${CORE_FRAMEWORK})
 endif()

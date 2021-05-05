@@ -1,3 +1,5 @@
-CPP2 v1.10.44817
+CPP2 v1.10.44885
 
--Fix some compilations warnings
+- Improve VisualStudio projects of Examples
+- Fix potential race condition in mbed TLS library (SSL/TLS)
+- Update README.md file

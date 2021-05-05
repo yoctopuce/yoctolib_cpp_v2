@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.c 44777 2021-04-30 09:02:57Z web $
+ * $Id: yssl.c 44847 2021-05-03 09:04:43Z web $
  *
  * Implementation of a client TCP stack with SSL
  *
@@ -46,7 +46,7 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
-
+#include "mbedtls/threading.h"
 #endif
 
 
@@ -252,11 +252,38 @@ int yssl_generate_certificate(const char* keyfile, const char* certfile,
 }
 
 
+static void yssl_mutex_init(mbedtls_threading_mutex_t* mutex)
+{
+
+    yInitializeCriticalSection(&mutex->mutex);
+}
+static void yssl_mutex_free(mbedtls_threading_mutex_t* mutex)
+{
+    yDeleteCriticalSection(&mutex->mutex);
+}
+static int yssl_mutex_lock(mbedtls_threading_mutex_t* mutex)
+{
+    yEnterCriticalSection(&mutex->mutex);
+    return 0;
+}
+static int yssl_mutex_unlock(mbedtls_threading_mutex_t* mutex)
+{
+    yLeaveCriticalSection(&mutex->mutex);
+    return 0;
+}
+
+
+
 int yTcpInitSSL(char* errmsg)
 {
     int ret;
-    const char* pers = "ssl_client1"; //fixme use real stuff
     SSLLOG("Init OpenSSL\n");
+
+    mbedtls_threading_set_alt(yssl_mutex_init,
+        yssl_mutex_free,
+        yssl_mutex_lock,
+        yssl_mutex_unlock);
+
 
     mbedtls_x509_crt_init(&cachain);
     mbedtls_x509_crt_init(&srvcert);
@@ -264,10 +291,9 @@ int yTcpInitSSL(char* errmsg)
     mbedtls_pk_init(&pkey);
 
     dbglog("Seeding the random number generator...\n");
-    //fixme implement something better.
     mbedtls_entropy_init(&entropy);
     ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
-                                &entropy, (const unsigned char*)pers, strlen(pers));
+                                &entropy, NULL,0);
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
     }
@@ -330,6 +356,7 @@ void yTcpShutdownSSL(void)
     mbedtls_pk_free(&pkey);
     mbedtls_ctr_drbg_free(&ctr_drbg);
     mbedtls_entropy_free(&entropy);
+    mbedtls_threading_free_alt();
 }
 
 
@@ -415,7 +442,7 @@ static int setup_ssl(yssl_socket_st* yssl, int server_mode, char* errmsg)
             return FMT_MBEDTLS_ERR(res);
         }
     } else {
-        mbedtls_ssl_conf_authmode(yssl->ssl_conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+        mbedtls_ssl_conf_authmode(yssl->ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     }
 
 
@@ -606,7 +633,6 @@ int yTcpReadSSL(YSSL_SOCKET yssl, u8* buffer, int len, char* errmsg)
 
 u32 yTcpGetRcvBufSizeSSL(YSSL_SOCKET skt)
 {
-    //fixme: look if we have some limitaiton due to SSL
     return yTcpGetRcvBufSizeBasic(skt->tcpskt);
 }
 

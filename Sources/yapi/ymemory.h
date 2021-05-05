@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ymemory.h 42582 2020-11-19 09:15:05Z seb $
+ * $Id: ymemory.h 44847 2021-05-03 09:04:43Z web $
  *
  * Basic memory check function to prevent memory leak
  *
@@ -58,8 +58,6 @@ void  ySafeMemoryStop(void);
 /*****************************************************************************
   MEMORY MANAGEMENT FUNCTION:
  ****************************************************************************/
-//FIXME: yMalloc definitions as been moved to ymemory.h for now
-//       look for a more pertinent place later
 
 //#define YSAFE_MEMORY
 

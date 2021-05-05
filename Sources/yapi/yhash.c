@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yhash.c 44145 2021-03-10 08:13:15Z seb $
+ * $Id: yhash.c 44847 2021-05-03 09:04:43Z web $
  *
  * Simple hash tables and device/function information store
  *
@@ -2052,8 +2052,8 @@ s16 ypFindBootloaders(yStrRef* serials, u16 maxSerials)
 }
 
 #ifdef EMBEDDED_API
-//fixme include yhub.h instead of hardcoded extern declaration
-extern u16          hubDevYdx;
+#include "yhub.h"
+
 int ypGetBootDevHdl(const char *serial)
 {
     yBlkHdl cat_hdl, hdl;

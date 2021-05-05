@@ -1,5 +1,5 @@
-Yoctopuce library for C++
-=========================
+Yoctopuce library for C++ v2.0 (Preview)
+========================================
 
 ## License information
 
@@ -52,31 +52,31 @@ WARRANTY, OR OTHERWISE.
 
  * Binaries/GNUmakefile
 
- 		Makefile for UNIX platforms
-
- * Binaries/makefile
-
- 		Makefile for Windows (nmake)
+ 		GNU Makefile for all platforms
 
  * Binaries/make.bat
 
- 		Batch to start nmake on Windows with right paths
+ 		Batch to start make on Windows with right paths
 
  * Binaries/windows/
 
- 		Directory that contains Windows executables
+ 		Directory that contains Windows 32 bits executables
+
+ * Binaries/windows/amd64
+
+ 		Directory that contains Windows 64 bitsexecutables
 
  * Binaries/osx/
 
  		Directory that contains Max OS X executables
 
- * Binaries/linux/32bits/
+ * Binaries/linux/i386/
 
- 		Directory that contains Linux 32bit executables
+ 		Directory that contains Linux Intel 32bit executables
 
- * Binaries/linux/64bits/
+ * Binaries/linux/x86_64/
 
- 		Directory that contains Linux 64bit executables
+ 		Directory that contains Linux Intel 64bit executables
 
  * Binaries/linux/armel/
 
@@ -85,6 +85,10 @@ WARRANTY, OR OTHERWISE.
  * Binaries/linux/armhf/
 
  		Directory that contains Linux ARM hard float executables
+
+ * Binaries/linux/aarch64/
+
+ 		Directory that contains Linux ARM 64 bits executables
 
  * Documentation/
 
@@ -102,9 +106,13 @@ WARRANTY, OR OTHERWISE.
 
  		Source code of the low-level library (in C)
 
+ * Sources/yapi/mbedtls
+
+ 		Source code of mbedTLS library (used for encryption)
+
  * udev_conf/
 
- 		Udev rules for linux (see Linux Release Notes)
+ 		Udev rules for Linux (see Linux Release Notes)
 
 
 ## Installation

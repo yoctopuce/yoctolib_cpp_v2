@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-#  $Id: GNUmakefile 44744 2021-04-29 07:21:05Z web $
+#  $Id: GNUmakefile 45160 2021-05-19 08:54:02Z web $
 #
 #  GNU Makefile for linux and Mac OS X
 #
@@ -153,6 +153,8 @@ CPP_MIPS = mips-openwrt-linux-g++
 CPP_MIPSEL = mipsel-openwrt-linux-g++
 CPP_OSX = g++
 CPP_OSX32 = g++
+
+RC = rc
 
 #generic flags
 OPTS_DBG = -g -Wall $(DEF_FLAGS_GCC)
@@ -467,6 +469,10 @@ $(OBJDIR_WIN32)%_dyn.obj: %.c $(ALL_H)
 $(OBJDIR_WIN32)%_dyn.obj: %.cpp $(ALL_H)
 	@echo compiling $@
 	@$(CPP_WIN32) $(OPTS_WIN32) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
+
+$(OBJDIR_WIN32)%.res: %.rc
+	$(RC) /fo $@ $<
+
 # WINDOW 64bits
 $(OBJDIR_WIN64)%.obj: %.c $(ALL_H)
 	@echo compiling $@
@@ -483,6 +489,9 @@ $(OBJDIR_WIN64)%_dyn.obj: %.c $(ALL_H)
 $(OBJDIR_WIN64)%_dyn.obj: %.cpp $(ALL_H)
 	@echo compiling $@
 	@$(CPP_WIN64) $(OPTS_WIN64) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
+
+$(OBJDIR_WIN64)%.res: %.rc
+	$(RC) /fo $@ $<
 
 #generic compilation rules
 $(OBJDIR_I386)%.o: %.c $(ALL_H)
@@ -628,16 +637,16 @@ $(YAPI_DIR_WIN32)yapi-static.lib: $(OBJDIR_WIN32) $(YAPI_DIR_WIN32) $(YAPI_OBJS_
 	@echo building lib ($@)
 	@lib /OUT:$@ $(YAPI_OBJS_STAT_WIN32)
 
-$(DIR_WIN32)yocto.dll: $(OBJDIR_WIN32) $(ALL_OBJS_DYN_WIN32) $(ALL_H)
+$(DIR_WIN32)yocto.dll: $(OBJDIR_WIN32) $(ALL_OBJS_DYN_WIN32) $(OBJDIR_WIN32)winresource.res  $(ALL_H)
 	@echo building dll $@
-	$(CPP_WIN32) $(ALL_OBJS_DYN_WIN32) OleAut32.lib /nologo /Fe$@ /Fa(R) /link /DLL $(LINKWITH_WIN32)
+	@$(CPP_WIN32) $(ALL_OBJS_DYN_WIN32) $(OBJDIR_WIN32)winresource.res OleAut32.lib /nologo /Fe$@ /Fa(R) /link /DLL $(LINKWITH_WIN32)
 
-$(YAPI_DIR_WIN32)yapi.dll: $(OBJDIR_WIN32) $(YAPI_DIR_WIN32) $(YAPI_OBJS_DYN_WIN32) $(ALL_H)
+$(YAPI_DIR_WIN32)yapi.dll: $(OBJDIR_WIN32) $(YAPI_DIR_WIN32) $(YAPI_OBJS_DYN_WIN32) $(OBJDIR_WIN32)yapiresource.res $(ALL_H)
 	@echo building dll $@
 ifdef JAVA_HOME
 	@echo java_home set to $(JAVA_HOME)
 endif
-	@$(CC_WIN32) $(YAPI_OBJS_DYN_WIN32) /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link /DLL $(LINKWITH_WIN32) /DEF:$(YAPI_SOURCES_DIR)yapi.def
+	@$(CC_WIN32) $(YAPI_OBJS_DYN_WIN32) $(OBJDIR_WIN32)yapiresource.res /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link /DLL $(LINKWITH_WIN32) /DEF:$(YAPI_SOURCES_DIR)yapi.def
 
 $(DIR_WIN32)test.exe: $(OBJDIR_WIN32) $(YAPI_DIR_WIN32) $(ALL_OBJS_STAT_WIN32) $(ALL_H) $(TEST_SRC)
 	@$(RM) -rf $@
@@ -657,16 +666,16 @@ $(YAPI_DIR_WIN64)yapi-static.lib: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(YAPI_OBJS_
 	@echo building lib ($@)
 	@lib /OUT:$@ $(YAPI_OBJS_STAT_WIN64)
 
-$(DIR_WIN64)yocto.dll: $(OBJDIR_WIN64) $(ALL_OBJS_DYN_WIN64) $(ALL_H)
+$(DIR_WIN64)yocto.dll: $(OBJDIR_WIN64) $(ALL_OBJS_DYN_WIN64) $(OBJDIR_WIN64)winresource64.res $(ALL_H)
 	@echo building dll $@
-	@$(CPP_WIN64) $(ALL_OBJS_DYN_WIN64) /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
+	@$(CPP_WIN64) $(ALL_OBJS_DYN_WIN64) $(OBJDIR_WIN64)winresource64.res /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
 
-$(YAPI_DIR_WIN64)yapi.dll: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(YAPI_OBJS_DYN_WIN64) $(ALL_H)
+$(YAPI_DIR_WIN64)yapi.dll: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(YAPI_OBJS_DYN_WIN64) $(OBJDIR_WIN64)yapiresource64.res  $(ALL_H)
 	@echo building dll $@
 ifdef JAVA_HOME
 	@echo java_home set to $(JAVA_HOME)
 endif
-	@$(CC_WIN64) $(YAPI_OBJS_DYN_WIN64) /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
+	@$(CC_WIN64) $(YAPI_OBJS_DYN_WIN64) $(OBJDIR_WIN64)yapiresource64.res /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
 
 $(DIR_WIN64)test.exe: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(ALL_OBJS_STAT_WIN64) $(ALL_H) $(TEST_SRC)
 	@$(RM) -rf $@

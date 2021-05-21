@@ -1,5 +1,5 @@
-CPP2 v1.10.44885
+CPP2 v2.0.45204
 
-- Improve VisualStudio projects of Examples
-- Fix potential race condition in mbed TLS library (SSL/TLS)
-- Update README.md file
+- Fix compilation of Windows 64 version of yapi.dll
+- Fix dll version information in .dll files
+- Fix SSL/TLS certificate validation

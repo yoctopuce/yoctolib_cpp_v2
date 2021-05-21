@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ytcp.c 44773 2021-04-29 18:11:20Z web $
+ * $Id: ytcp.c 45122 2021-05-18 08:41:17Z web $
  *
  * Implementation of a client TCP stack
  *
@@ -243,13 +243,12 @@ void dump_socket(YSOCKET_MULTI newskt, int clear_log, const char* msg, const u8*
 #endif
 
 
-
-
 void yDupSet(char** storage, const char* val)
 {
     int len = (val ? (int)strlen(val) + 1 : 1);
 
-    if (*storage) yFree(*storage);
+    if (*storage)
+        yFree(*storage);
     *storage = (char*)yMalloc(len);
     if (val) {
         memcpy(*storage, val, len);
@@ -258,12 +257,12 @@ void yDupSet(char** storage, const char* val)
     }
 }
 
-int yNetSetErrEx(const char *fileid, u32 line, unsigned err, char* errmsg)
+int yNetSetErrEx(const char* fileid, u32 line, unsigned err, char* errmsg)
 {
     int len;
     if (errmsg == NULL)
         return YAPI_IO_ERROR;
-    YSPRINTF(errmsg,YOCTO_ERRMSG_LEN, "%s:%d:tcp(%d):",fileid, line, err);
+    YSPRINTF(errmsg,YOCTO_ERRMSG_LEN, "%s:%d:tcp(%d):", fileid, line, err);
     //dbglog("yNetSetErrEx -> %s:%d:tcp(%d)\n",fileid,line,err);
 
 #if defined(WINDOWS_API) && !defined(WINCE)
@@ -295,8 +294,8 @@ static int yNetLogErrEx(u32 line, unsigned err)
 {
     int retval;
     char errmsg[YOCTO_ERRMSG_LEN];
-    retval = yNetSetErrEx(__FILE_ID__,line, err, errmsg);
-    dbglog("%s",errmsg);
+    retval = yNetSetErrEx(__FILE_ID__, line, err, errmsg);
+    dbglog("%s", errmsg);
     return retval;
 }
 #endif
@@ -356,32 +355,32 @@ int yStartWakeUpSocket(WakeUpSocket* wuce, char* errmsg)
     struct sockaddr_in localh;
 
     if (wuce->listensock != INVALID_SOCKET || wuce->signalsock != INVALID_SOCKET) {
-        return YERRMSG(YAPI_INVALID_ARGUMENT,"WakeUpSocket already Started");
+        return YERRMSG(YAPI_INVALID_ARGUMENT, "WakeUpSocket already Started");
     }
     //create socket
-    wuce->listensock = ysocket(PF_INET,SOCK_DGRAM,IPPROTO_UDP);
+    wuce->listensock = ysocket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (wuce->listensock == INVALID_SOCKET) {
         return yNetSetErr();
     }
     optval = 1;
-    setsockopt(wuce->listensock,SOL_SOCKET,SO_REUSEADDR, (char *)&optval, sizeof(optval));
+    setsockopt(wuce->listensock,SOL_SOCKET,SO_REUSEADDR, (char*)&optval, sizeof(optval));
 
     localh_size = sizeof(localh);
     // set port to 0 since we accept any port
     memset(&localh, 0, localh_size);
     localh.sin_family = AF_INET;
     localh.sin_addr.s_addr = inet_addr("127.0.0.1");
-    if (bind(wuce->listensock, (struct sockaddr *)&localh, localh_size) < 0) {
+    if (bind(wuce->listensock, (struct sockaddr*)&localh, localh_size) < 0) {
         return yNetSetErr();
     }
-    if (getsockname(wuce->listensock, (struct sockaddr *)&localh, &localh_size) < 0) {
+    if (getsockname(wuce->listensock, (struct sockaddr*)&localh, &localh_size) < 0) {
         return yNetSetErr();
     }
-    wuce->signalsock = ysocket(PF_INET,SOCK_DGRAM,IPPROTO_UDP);
+    wuce->signalsock = ysocket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (wuce->signalsock == INVALID_SOCKET) {
         return yNetSetErr();
     }
-    if (connect(wuce->signalsock, (struct sockaddr *)&localh, localh_size) < 0) {
+    if (connect(wuce->signalsock, (struct sockaddr*)&localh, localh_size) < 0) {
         return yNetSetErr();
     }
     return YAPI_SUCCESS;
@@ -389,7 +388,7 @@ int yStartWakeUpSocket(WakeUpSocket* wuce, char* errmsg)
 
 int yDringWakeUpSocket(WakeUpSocket* wuce, u8 signal, char* errmsg)
 {
-    if (ysend(wuce->signalsock,(char*)&signal,1,SEND_NOSIGPIPE) < 0) {
+    if (ysend(wuce->signalsock, (char*)&signal, 1, SEND_NOSIGPIPE) < 0) {
         return yNetSetErr();
     }
     return YAPI_SUCCESS;
@@ -398,7 +397,7 @@ int yDringWakeUpSocket(WakeUpSocket* wuce, u8 signal, char* errmsg)
 int yConsumeWakeUpSocket(WakeUpSocket* wuce, char* errmsg)
 {
     u8 signal = 0;
-    if (yrecv(wuce->listensock,(char*)&signal,1,0) < 0) {
+    if (yrecv(wuce->listensock, (char*)&signal, 1, 0) < 0) {
         return yNetSetErr();
     }
     return signal;
@@ -417,14 +416,14 @@ void yFreeWakeUpSocket(WakeUpSocket* wuce)
 }
 
 
-int yResolveDNS(const char* name, IPvX_ADDR *ip, char* errmsg)
+int yResolveDNS(const char* name, IPvX_ADDR* ip, char* errmsg)
 {
     struct addrinfo *infos, *p;
     struct addrinfo hint;
     int res = -1;
 
     memset(&hint, 0, sizeof(hint));
-    hint.ai_family = AF_UNSPEC;// AF_INET6;
+    hint.ai_family = AF_UNSPEC; // AF_INET6;
 
     if (getaddrinfo(name, NULL, &hint, &infos) != 0) {
         REPORT_ERR("Unable to resolve host name");
@@ -454,8 +453,7 @@ int yResolveDNS(const char* name, IPvX_ADDR *ip, char* errmsg)
 #define YDNS_CACHE_SIZE 16
 #define YDNS_CACHE_VALIDITY 600000u //10 minutes
 
-typedef struct
-{
+typedef struct {
     yUrlRef url;
     IPvX_ADDR ip;
     u64 time;
@@ -481,7 +479,7 @@ static int resolveDNSCache(yUrlRef url, IPvX_ADDR* resolved_ip, char* errmsg)
     }
     if (i < YDNS_CACHE_SIZE) {
         if ((u64)(yapiGetTickCount() - dnsCache[i].time) <= YDNS_CACHE_VALIDITY) {
-            memcpy(resolved_ip, &dnsCache[i].ip,sizeof(IPvX_ADDR));
+            memcpy(resolved_ip, &dnsCache[i].ip, sizeof(IPvX_ADDR));
             return 1;
         }
         firstFree = i;
@@ -490,7 +488,7 @@ static int resolveDNSCache(yUrlRef url, IPvX_ADDR* resolved_ip, char* errmsg)
     res = yResolveDNS(buffer, &ip, errmsg);
     if (res > 0 && firstFree < YDNS_CACHE_SIZE) {
         dnsCache[firstFree].url = url;
-        memcpy(&dnsCache[firstFree].ip, &ip , sizeof(IPvX_ADDR));
+        memcpy(&dnsCache[firstFree].ip, &ip, sizeof(IPvX_ADDR));
         memcpy(resolved_ip, &dnsCache[firstFree].ip, sizeof(IPvX_ADDR));
         dnsCache[firstFree].time = yapiGetTickCount();
         return 1;
@@ -509,9 +507,9 @@ static int yTcpInitBasic(char* errmsg)
 #ifdef WINDOWS_API
     // Initialize Winsock 2.2
     WSADATA wsaData;
-    int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
-        return YERRMSG(YAPI_IO_ERROR,"Unable to start Windows Socket");
+        return YERRMSG(YAPI_IO_ERROR, "Unable to start Windows Socket");
     }
 #endif
     TCPLOG("yTcpInit\n");
@@ -527,7 +525,6 @@ static void yTcpShutdownBasic(void)
 #ifdef PERF_TCP_FUNCTIONS
     dumpYTcpPerf();
 #endif
-
 #ifdef WINDOWS_API
     WSACleanup();
 #endif
@@ -568,28 +565,25 @@ int yTcpOpenBasic(YSOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, char*
     // The sockaddr_in structure specifies the address family,
     // IP address, and port of the server to be connected to.
     if (isIPv4(ip)) {
-        struct sockaddr_in *addr_v4 = (struct sockaddr_in*)&addr;
+        struct sockaddr_in* addr_v4 = (struct sockaddr_in*)&addr;
         socktype = AF_INET;
-        //dbglog("ytcpOpen %d:%d:%d:%d port=%d skt= %x\n",
-        //    ip->v4.addr.v[0], ip->v4.addr.v[1], ip->v4.addr.v[2], ip->v4.addr.v[3],port);
-
-
+        TCPLOG("ytcpOpen %d:%d:%d:%d port=%d skt= %x\n",
+               ip->v4.addr.v[0], ip->v4.addr.v[1], ip->v4.addr.v[2], ip->v4.addr.v[3], port);
         addr_v4->sin_family = AF_INET;
         addr_v4->sin_addr.s_addr = ip->v4.addr.Val;
         addr_v4->sin_port = htons(port);
         addrlen = sizeof(struct sockaddr_in);
-    }else {
+    } else {
         struct sockaddr_in6* addr_v6 = (struct sockaddr_in6*)&addr;
         socktype = AF_INET6;
-        //dbglog("ytcpOpen %x:%x:%x:%x:%x:%x:%x:%x port=%d\n",
-        //    ntohs(ip->v6.addr[0]), ntohs(ip->v6.addr[1]), ntohs(ip->v6.addr[2]), ntohs(ip->v6.addr[3]), ntohs(ip->v6.addr[4]), ntohs(ip->v6.addr[5]), ntohs(ip->v6.addr[6]), ntohs(ip->v6.addr[7]),
-        //    port);
+        TCPLOG("ytcpOpen %x:%x:%x:%x:%x:%x:%x:%x port=%d\n",
+               ntohs(ip->v6.addr[0]), ntohs(ip->v6.addr[1]), ntohs(ip->v6.addr[2]), ntohs(ip->v6.addr[3]), ntohs(ip->v6.addr[4]), ntohs(ip->v6.addr[5]), ntohs(ip->v6.addr[6]), ntohs(ip->v6.addr[7]),
+               port);
         addr_v6->sin6_family = AF_INET6;
         memcpy(&addr_v6->sin6_addr, ip->v6.addr, sizeof(IPvX_ADDR));
         addr_v6->sin6_port = htons(port);
         addrlen = sizeof(struct sockaddr_in6);
     }
-
     YPERF_TCP_ENTER(TCPOpen_socket);
     *newskt = INVALID_SOCKET;
     skt = ysocket(socktype, SOCK_STREAM, IPPROTO_TCP);
@@ -616,7 +610,7 @@ int yTcpOpenBasic(YSOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, char*
 #endif
 #endif
     YPERF_TCP_LEAVE(TCPOpen_setsockopt_noblock);
-    connect(skt, (struct sockaddr *)&addr, addrlen);
+    connect(skt, (struct sockaddr*)&addr, addrlen);
 
     // wait for the connection with a select
     memset(&timeout, 0, sizeof(timeout));
@@ -676,7 +670,7 @@ int yTcpOpenBasic(YSOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, char*
                 break;
         }
 #endif
-        dbglog("SetSockOpt TCP_NODELAY failed %d\n",errno);
+        dbglog("SetSockOpt TCP_NODELAY failed %d\n", errno);
     }
     YPERF_TCP_LEAVE(TCPOpen_setsockopt_nodelay);
 
@@ -746,9 +740,9 @@ retry:
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
     FD_ZERO(&exceptfds);
-    FD_SET(skt,&readfds);
-    FD_SET(skt,&writefds);
-    FD_SET(skt,&exceptfds);
+    FD_SET(skt, &readfds);
+    FD_SET(skt, &writefds);
+    FD_SET(skt, &exceptfds);
     res = select((int)skt + 1, &readfds, &writefds, &exceptfds, &timeout);
     if (res < 0) {
 #ifndef WINDOWS_API
@@ -762,16 +756,16 @@ retry:
             return res;
         }
     }
-    if (FD_ISSET(skt,&exceptfds)) {
+    if (FD_ISSET(skt, &exceptfds)) {
         yTcpCloseBasic(skt);
         return YERRMSG(YAPI_IO_ERROR, "Exception on socket");
     }
-    if (!FD_ISSET(skt,&writefds)) {
+    if (!FD_ISSET(skt, &writefds)) {
         yTcpCloseBasic(skt);
         return YERRMSG(YAPI_IO_ERROR, "Socket not ready for write");
     }
 
-    if (FD_ISSET(skt,&readfds)) {
+    if (FD_ISSET(skt, &readfds)) {
         char buffer[128];
         iResult = (int)yrecv(skt, buffer, sizeof(buffer), 0);
         if (iResult == 0) {
@@ -821,7 +815,7 @@ int yTcpWriteBasic(YSOCKET skt, const u8* buffer, int len, char* errmsg)
                 // a long time to process (on OSX: seen more than 40 seconds !)
                 timeout.tv_sec = 60;
                 FD_ZERO(&fds);
-                FD_SET(skt,&fds);
+                FD_SET(skt, &fds);
                 res = select((int)skt + 1,NULL, &fds,NULL, &timeout);
                 if (res < 0) {
 #ifndef WINDOWS_API
@@ -842,15 +836,13 @@ int yTcpWriteBasic(YSOCKET skt, const u8* buffer, int len, char* errmsg)
 }
 
 
-
 int yTcpReadBasic(YSOCKET skt, u8* buffer, int len, char* errmsg)
 {
     int iResult = (int)yrecv(skt, (char*)buffer, len, 0);
 
     if (iResult == 0) {
         return YERR(YAPI_NO_MORE_DATA);
-    }
-    else if (iResult < 0) {
+    } else if (iResult < 0) {
 #ifdef WINDOWS_API
         if (SOCK_ERR == WSAEWOULDBLOCK) {
             return 0;
@@ -900,7 +892,7 @@ __forceinline void __MTCPLOG(fmt,...){}
 
 int yTcpInitMulti(char* errmsg)
 {
-	int res;
+    int res;
     MTCPLOG("MTCP: Init\n");
     res = yTcpInitBasic(errmsg);
 #ifndef NO_YSSL
@@ -911,9 +903,9 @@ int yTcpInitMulti(char* errmsg)
     return res;
 }
 
-int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR *ip, u16 port, int useSSL, u64 mstimeout, char* errmsg)
+int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR* ip, u16 port, int useSSL, u64 mstimeout, char* errmsg)
 {
-	YSOCKET_MULTI tmpsock;
+    YSOCKET_MULTI tmpsock;
     MTCPLOG("MTCP: Open %p [dst=%d:%d %dms]\n", newskt, ip, port, mstimeout);
     tmpsock = yMalloc(sizeof(YSOCKET_MULTI_ST));
     memset(tmpsock, 0, sizeof(YSOCKET_MULTI_ST));
@@ -924,7 +916,7 @@ int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR *ip, u16 port, int useSSL, u6
 
     if (!useSSL) {
         int res = yTcpOpenBasic(&tmpsock->basic, ip, port, mstimeout, errmsg);
-        if (res <0) {
+        if (res < 0) {
             yFree(tmpsock);
         } else {
             *newskt = tmpsock;
@@ -933,7 +925,7 @@ int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR *ip, u16 port, int useSSL, u6
     } else {
 #ifndef NO_YSSL
         int res = yTcpOpenSSL(&tmpsock->secure, ip, port, mstimeout, errmsg);
-        if (res <0) {
+        if (res < 0) {
             yFree(tmpsock);
         } else {
             tmpsock->secure_socket = 1;
@@ -946,7 +938,7 @@ int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR *ip, u16 port, int useSSL, u6
     }
 }
 
-int yTcpAcceptMulti(YSOCKET_MULTI* newskt, YSOCKET sock, int useSSL,char* errmsg)
+int yTcpAcceptMulti(YSOCKET_MULTI* newskt, YSOCKET sock, int useSSL, char* errmsg)
 {
     YSOCKET_MULTI tmpsock;
     MTCPLOG("MTCP: Accept %p [sock=%d]\n", newskt, sock);
@@ -963,7 +955,7 @@ int yTcpAcceptMulti(YSOCKET_MULTI* newskt, YSOCKET sock, int useSSL,char* errmsg
     } else {
 #ifndef NO_YSSL
         int res = yTcpAcceptSSL(&tmpsock->secure, sock, errmsg);
-        if (res <0) {
+        if (res < 0) {
             yFree(tmpsock);
         } else {
             tmpsock->secure_socket = 1;
@@ -987,7 +979,7 @@ void yTcpCloseMulti(YSOCKET_MULTI skt)
     dump_socket(skt, 0, "close Socket", NULL, 0);
 #endif
 
-    if (skt==NULL) {
+    if (skt == NULL) {
         return;
     }
     if (!is_secure) {
@@ -1013,8 +1005,7 @@ YSOCKET yTcpFdSetMulti(YSOCKET_MULTI skt, void* set, YSOCKET sktmax)
             sktmax = skt->basic;
         }
         return sktmax;
-    }
-    else {
+    } else {
 #ifndef NO_YSSL
         return yTcpFdSetSSL(skt->secure, set, sktmax);
 #else
@@ -1057,8 +1048,7 @@ int yTcpCheckSocketStillValidMulti(YSOCKET_MULTI skt, char* errmsg)
 #endif
     if (!skt->secure_socket) {
         return yTcpCheckSocketStillValidBasic(skt->basic, errmsg);
-    }
-    else {
+    } else {
 #ifndef NO_YSSL
         return yTcpCheckSocketStillValidSSL(skt->secure, errmsg);
 #else
@@ -1072,7 +1062,7 @@ int yTcpReadMulti(YSOCKET_MULTI skt, u8* buffer, int len, char* errmsg)
     int res;
     YASSERT(skt != NULL);
     if (!skt->secure_socket) {
-        res =yTcpReadBasic(skt->basic, buffer, len, errmsg);
+        res = yTcpReadBasic(skt->basic, buffer, len, errmsg);
     } else {
 #ifndef NO_YSSL
         res = yTcpReadSSL(skt->secure, buffer, len, errmsg);
@@ -1080,7 +1070,7 @@ int yTcpReadMulti(YSOCKET_MULTI skt, u8* buffer, int len, char* errmsg)
         res = YERRMSG(YAPI_NOT_SUPPORTED, "SSL support is not activated.");
 #endif
     }
-    MTCPLOG("MTCP: Read %d->%d bytes (sock=%p %s)\n", len,res, skt, skt->secure_socket?"secure":"basic");
+    MTCPLOG("MTCP: Read %d->%d bytes (sock=%p %s)\n", len, res, skt, skt->secure_socket?"secure":"basic");
 #ifdef DUMP_YSOCKET_MULTI_TRAFFIC
     dump_socket(skt, 0, "yTcpReadMulti", buffer, res);
 #endif
@@ -1112,15 +1102,14 @@ u32 yTcpGetRcvBufSizeMulti(YSOCKET_MULTI skt)
 int yTcpWriteMulti(YSOCKET_MULTI skt, const u8* buffer, int len, char* errmsg)
 {
     YASSERT(skt != NULL);
-    MTCPLOG("MTCP: write %d bytes (sock=%p %s)\n",len, skt, skt->secure_socket?"secure":"basic");
+    MTCPLOG("MTCP: write %d bytes (sock=%p %s)\n", len, skt, skt->secure_socket?"secure":"basic");
 #ifdef DUMP_YSOCKET_MULTI_TRAFFIC
     dump_socket(skt, 0, "yTcpWriteMulti", buffer, len);
 #endif
 
     if (!skt->secure_socket) {
         return yTcpWriteBasic(skt->basic, buffer, len, errmsg);
-    }
-    else {
+    } else {
 #ifndef NO_YSSL
         return yTcpWriteSSL(skt->secure, buffer, len, errmsg);
 #else
@@ -1128,6 +1117,7 @@ int yTcpWriteMulti(YSOCKET_MULTI skt, const u8* buffer, int len, char* errmsg)
 #endif
     }
 }
+
 void yTcpShutdownMulti(void)
 {
     MTCPLOG("MTCP: shutdown\n");
@@ -1136,8 +1126,6 @@ void yTcpShutdownMulti(void)
 #endif
     yTcpShutdownBasic();
 }
-
-
 
 
 int yTcpDownload(const char* host, int port, int usessl, const char* url, u8** out_buffer, u32 mstimeout, char* errmsg)
@@ -1152,13 +1140,13 @@ int yTcpDownload(const char* host, int port, int usessl, const char* url, u8** o
     u64 expiration;
     IPvX_ADDR ip;
 
-    res = yResolveDNS(host, &ip,  errmsg);
+    res = yResolveDNS(host, &ip, errmsg);
     if (res < 0) {
         yFree(replybuf);
         return YAPI_IO_ERROR;
     }
     expiration = yapiGetTickCount() + mstimeout;
-    if (yTcpOpenMulti(&skt, &ip, port,  usessl, mstimeout, errmsg) < 0) {
+    if (yTcpOpenMulti(&skt, &ip, port, usessl, mstimeout, errmsg) < 0) {
         yFree(replybuf);
         return YAPI_IO_ERROR;
     }
@@ -1171,14 +1159,14 @@ int yTcpDownload(const char* host, int port, int usessl, const char* url, u8** o
     }
     while (expiration - yapiGetTickCount() > 0) {
         struct timeval timeout;
-		int max;
+        int max;
         u64 ms = expiration - yapiGetTickCount();
         memset(&timeout, 0, sizeof(timeout));
         timeout.tv_sec = (long)ms / 1000;
         timeout.tv_usec = (int)(ms % 1000) * 1000;
         /* wait for data */
         FD_ZERO(&fds);
-        max = (int)yTcpFdSetMulti(skt, &fds,0);
+        max = (int)yTcpFdSetMulti(skt, &fds, 0);
         //FD_SET(skt,&fds);
         res = select(max + 1, &fds,NULL,NULL, &timeout);
         if (res < 0) {
@@ -1225,7 +1213,7 @@ exit:
         yFree(replybuf);
     } else {
         *out_buffer = replybuf;
-        if (YSTRNCMP((char*)replybuf,"HTTP/1.1 200",12) == 0) {
+        if (YSTRNCMP((char*)replybuf, "HTTP/1.1 200", 12) == 0) {
             // check if we need to decode chunks encoding
             int data_ofs = ymemfind(replybuf, res, (u8*)"\r\n\r\n", 4);
             if (data_ofs > 0) {
@@ -1299,8 +1287,6 @@ exit:
             }
 
         }
-
-
     }
     return res;
 }
@@ -1355,12 +1341,11 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
 {
     char buffer[YOCTO_HOSTNAME_NAME], *p, *last, *end;
     IPvX_ADDR ip;
-    u16 port;
     int res;
 
     YASSERT(req->proto == PROTO_HTTP || req->proto == PROTO_SECURE_HTTP);
 
-    switch (yHashGetUrlPort(req->hub->url, buffer, &port, NULL, NULL, NULL, NULL)) {
+    switch (yHashGetUrlPort(req->hub->url, buffer, NULL, NULL, NULL, NULL, NULL)) {
     case NAME_URL:
         res = resolveDNSCache(req->hub->url, &ip, errmsg);
         if (res < 0) {
@@ -1369,7 +1354,7 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
         }
         break;
     case IPV4_URL:
-        setIPv4Val(&ip,inet_addr(buffer));
+        setIPv4Val(&ip, inet_addr(buffer));
         break;
     default:
         res = YERRMSG(YAPI_IO_ERROR, "not an IP hub");
@@ -1390,7 +1375,7 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
         req->http.reuseskt = INVALID_SOCKET_MULTI;
     } else {
         req->http.reuseskt = INVALID_SOCKET_MULTI;
-        res = yTcpOpenMulti(&req->http.skt, &ip, port, req->proto == PROTO_SECURE_HTTP, mstimout, errmsg);
+        res = yTcpOpenMulti(&req->http.skt, &ip, req->hub->portno, req->proto == PROTO_SECURE_HTTP, mstimout, errmsg);
         if (YISERR(res)) {
             // yTcpOpen has reset the socket to INVALID
             yTcpCloseMulti(req->http.skt);
@@ -1409,7 +1394,7 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
     while (*p == '\r' && *(p + 1) == '\n' && *(p + 2) != '\r') {
         p += 2;
         while (*p && *p != '\r') p++;
-        if (YSTRNCMP(last,"\r\nContent-Type",strlen("\r\nContent-Type")) == 0) {
+        if (YSTRNCMP(last, "\r\nContent-Type", strlen("\r\nContent-Type")) == 0) {
             unsigned len = (unsigned)(p - last);
             if (last != end) {
                 memcpy(end, last, len);
@@ -1455,7 +1440,7 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
     }
     if (req->bodysize > 0) {
         //write body
-        res = yTcpWriteMulti(req->http.skt,  (u8*)req->bodybuf, req->bodysize, errmsg);
+        res = yTcpWriteMulti(req->http.skt, (u8*)req->bodybuf, req->bodysize, errmsg);
         if (YISERR(res)) {
             yTcpCloseMulti(req->http.skt);
             req->http.skt = INVALID_SOCKET_MULTI;
@@ -1475,7 +1460,7 @@ static int yHTTPOpenReqEx(struct _RequestSt* req, u64 mstimout, char* errmsg)
 
 static void yHTTPCloseReqEx(struct _RequestSt* req, int canReuseSocket)
 {
-    TCPLOG("yHTTPCloseReqEx %p[%d]\n",req, canReuseSocket);
+    TCPLOG("yHTTPCloseReqEx %p[%d]\n", req, canReuseSocket);
 
     // mutex already taken by caller
     req->flags &= ~TCPREQ_KEEPALIVE;
@@ -1554,7 +1539,7 @@ static int yHTTPMultiSelectReq(struct _RequestSt** reqs, int size, u64 ms, WakeU
         }
     }
     if (res >= 0) {
-        if (wuce && FD_ISSET(wuce->listensock,&fds)) {
+        if (wuce && FD_ISSET(wuce->listensock, &fds)) {
             YPROPERR(yConsumeWakeUpSocket(wuce, errmsg));
         }
         for (i = 0; i < size; i++) {
@@ -1578,15 +1563,15 @@ static int yHTTPMultiSelectReq(struct _RequestSt** reqs, int size, u64 ms, WakeU
                 if (res < 0) {
                     // any connection closed by peer ends up with YAPI_NO_MORE_DATA
                     req->replypos = 0;
-                    req->errcode = YERRTO((YRETCODE) res,req->errmsg);
-                    TCPLOG("yHTTPSelectReq %p[%x] connection closed by peer\n",req,req->http.skt);
+                    req->errcode = YERRTO((YRETCODE) res, req->errmsg);
+                    TCPLOG("yHTTPSelectReq %p[%x] connection closed by peer\n", req, req->http.skt);
                     yHTTPCloseReqEx(req, 0);
                 } else if (res > 0) {
                     req->replysize += res;
                     if (req->replypos < 0) {
                         // Need to analyze http headers
                         if (req->replysize == 8 && !memcmp(req->replybuf, "0K\r\n\r\n\r\n", 8)) {
-                            TCPLOG("yHTTPSelectReq %p[%x] ultrashort reply\n",req,req->http.skt);
+                            TCPLOG("yHTTPSelectReq %p[%x] ultrashort reply\n", req, req->http.skt);
                             // successful abbreviated reply (keepalive)
                             req->replypos = 0;
                             req->replybuf[0] = 'O';
@@ -1700,8 +1685,8 @@ static int yWSOpenReqEx(struct _RequestSt* req, int tcpchan, u64 mstimeout, char
     u8* p;
     int count = 0;
     u64 start = yapiGetTickCount();
-    YASSERT(req->proto == PROTO_AUTO || req->proto == PROTO_WEBSOCKET || req->proto == PROTO_SECURE_WEBSOCKET);
-    memset(&req->ws,0, sizeof(WSReqSt));
+    YASSERT(req->proto == PROTO_LEGACY || req->proto == PROTO_WEBSOCKET || req->proto == PROTO_SECURE_WEBSOCKET);
+    memset(&req->ws, 0, sizeof(WSReqSt));
     // merge first line and header
     headlen = YSTRLEN(req->headerbuf);
     req->ws.requestsize = headlen + 4 + req->bodysize;
@@ -1749,7 +1734,7 @@ retry:
             r = r->ws.next;
             count++;
         }
-        if (count== MAX_QUEUE_SIZE && r->ws.next) {
+        if (count == MAX_QUEUE_SIZE && r->ws.next) {
             //too many request in queue sleep a bit
             yLeaveCriticalSection(&hub->ws.chan[tcpchan].access);
             goto retry;
@@ -1802,7 +1787,7 @@ static void yWSCloseReq(struct _RequestSt* req)
     WSLOG("req(%s:%p) close req after %"FMTu64"ms (%"FMTu64"ms) with %d bytes errcode = %d\n", req->hub->name, req, duration, (req->write_tm - req->open_tm), req->replysize, req->errcode);
 #endif
 
-    YASSERT(req->proto == PROTO_AUTO || req->proto == PROTO_WEBSOCKET || req->proto == PROTO_SECURE_WEBSOCKET);
+    YASSERT(req->proto == PROTO_LEGACY || req->proto == PROTO_WEBSOCKET || req->proto == PROTO_SECURE_WEBSOCKET);
     if (req->callback) {
         // async close
         len = req->replysize - req->replypos;
@@ -1905,7 +1890,8 @@ static void dumpTCPReq(const char *fileid, int lineno, struct _RequestSt *req)
 
     dbglog("%s retcode=%d (retrycount=%d) errmsg=%s\n", state, req->errcode, req->retryCount, req->errmsg);
     switch(req->proto){
-        case PROTO_AUTO: proto ="PROTO_AUTO"; break;
+        case PROTO_LEGACY: proto ="PROTO_LEGACY"; break;
+        case PROTO_AUTO: proto = "PROTO_AUTO"; break;
         case PROTO_HTTP: proto ="PROTO_HTTP"; break;
         case PROTO_WEBSOCKET: proto ="PROTO_WEBSOCKET"; break;
         case PROTO_SERCURE_HTTP: proto ="PROTO_SERCURE_HTTP"; break;
@@ -1935,7 +1921,7 @@ struct _RequestSt* yReqAlloc(struct _HubSt* hub)
 {
     struct _RequestSt* req = yMalloc(sizeof(struct _RequestSt));
     memset(req, 0, sizeof(struct _RequestSt));
-    yHashGetUrlPort(hub->url, NULL, NULL, &req->proto, NULL, NULL, NULL);
+    req->proto = hub->proto;
     TCPLOG("yTcpInitReq %p[%x:%x]\n", req, hub->url, req->proto);
     req->replybufsize = 1500;
     req->replybuf = (u8*)yMalloc(req->replybufsize);
@@ -1948,9 +1934,7 @@ struct _RequestSt* yReqAlloc(struct _HubSt* hub)
         req->http.reuseskt = INVALID_SOCKET_MULTI;
         req->http.skt = INVALID_SOCKET_MULTI;
         break;
-    case PROTO_AUTO:
-    case PROTO_WEBSOCKET:
-    case PROTO_SECURE_WEBSOCKET:
+    default:
         break;
     }
     return req;
@@ -2020,7 +2004,8 @@ int yReqOpen(struct _RequestSt* req, int wait_for_start, int tcpchan, const char
         reqlen = (int)(p - request);
         // Build a request body buffer
         if (req->bodybufsize < bodylen) {
-            if (req->bodybuf) yFree(req->bodybuf);
+            if (req->bodybuf)
+                yFree(req->bodybuf);
             req->bodybufsize = bodylen + (bodylen >> 1);
             req->bodybuf = (char*)yMalloc(req->bodybufsize);
         }
@@ -2031,7 +2016,8 @@ int yReqOpen(struct _RequestSt* req, int wait_for_start, int tcpchan, const char
     // include space for Connection: close and Authorization: headers
     minlen = reqlen + 400;
     if (req->headerbufsize < minlen) {
-        if (req->headerbuf) yFree(req->headerbuf);
+        if (req->headerbuf)
+            yFree(req->headerbuf);
         req->headerbufsize = minlen + (reqlen >> 1);
         req->headerbuf = (char*)yMalloc(req->headerbufsize);
     }
@@ -2189,8 +2175,6 @@ void yReqClose(struct _RequestSt* req)
     if (req->proto != PROTO_HTTP && req->proto != PROTO_SECURE_HTTP) {
         yWSRemoveReq(req);
     }
-
-
 }
 
 
@@ -2206,7 +2190,7 @@ int yReqIsAsync(struct _RequestSt* req)
 
 void yReqFree(struct _RequestSt* req)
 {
-    TCPLOG("yTcpFreeReq %p\n",req);
+    TCPLOG("yTcpFreeReq %p\n", req);
     if (req->proto == PROTO_HTTP || req->proto == PROTO_SECURE_HTTP) {
         if (req->http.skt != INVALID_SOCKET_MULTI) {
             yTcpCloseMulti(req->http.skt);
@@ -2215,11 +2199,15 @@ void yReqFree(struct _RequestSt* req)
             yTcpCloseMulti(req->http.reuseskt);
         }
     } else {
-        if (req->ws.requestbuf) yFree(req->ws.requestbuf);
+        if (req->ws.requestbuf)
+            yFree(req->ws.requestbuf);
     }
-    if (req->headerbuf) yFree(req->headerbuf);
-    if (req->bodybuf) yFree(req->bodybuf);
-    if (req->replybuf) yFree(req->replybuf);
+    if (req->headerbuf)
+        yFree(req->headerbuf);
+    if (req->bodybuf)
+        yFree(req->bodybuf);
+    if (req->replybuf)
+        yFree(req->replybuf);
     yCloseEvent(&req->finished);
     yDeleteCriticalSection(&req->access);
     yFree(req);
@@ -2245,7 +2233,7 @@ int yReqHasPending(struct _HubSt* hub)
             yEnterCriticalSection(&hub->ws.chan[tcpchan].access);
             if (hub->ws.chan[tcpchan].requests) {
                 req = hub->ws.chan[tcpchan].requests;
-                while (req && req->ws.requestsize == req->ws.requestpos && req->ws.state == REQ_CLOSED_BY_BOTH ) {
+                while (req && req->ws.requestsize == req->ws.requestpos && req->ws.state == REQ_CLOSED_BY_BOTH) {
                     req = req->ws.next;
                 }
                 if (req != NULL) {
@@ -2408,7 +2396,7 @@ static int VerifyWebsocketKey(const char* data, u16 hdrlen, const char* referenc
 #else
     memcpy(buf + reference_len, magic, YOCTO_WEBSOCKET_MAGIC_LEN + 1);
 #endif
-    sha1 = ySHA1((char *)buf);
+    sha1 = ySHA1((char*)buf);
     Base64Encode(sha1, 20, buf, 80);
     if (memcmp(buf, data, hdrlen) == 0) {
         return 1;
@@ -2614,7 +2602,7 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
         pktlen--;
         if (req->ws.asyncId != asyncid) {
             YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "WS: Incorrect async-close signature on tcpChan %d %p (%d:%d)\n",
-                strym.tcpchan, req, req->ws.asyncId, asyncid);
+                     strym.tcpchan, req, req->ws.asyncId, asyncid);
             //dumpReqQueue("recv",hub, strym.tcpchan);
             return YAPI_IO_ERROR;
         }
@@ -2633,7 +2621,7 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
     case YSTREAM_TCP_CLOSE:
         if (strym.tcpchan > 3) {
             dbglog("WS: Unexpected frame for tcpChan %d (%s)\n", strym.tcpchan,
-                (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
+                   (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
             return YAPI_IO_ERROR;
         }
 
@@ -2641,11 +2629,11 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
         req = hub->ws.chan[strym.tcpchan].requests;
         if (req == NULL) {
             dbglog("WS: Drop frame for closed tcpChan %d (%s/empty)\n", strym.tcpchan,
-                (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
+                   (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
             yLeaveCriticalSection(&hub->ws.chan[strym.tcpchan].access);
             return YAPI_IO_ERROR;
         }
-        while (req != NULL && req->ws.state == REQ_CLOSED_BY_BOTH ) {
+        while (req != NULL && req->ws.state == REQ_CLOSED_BY_BOTH) {
             req = req->ws.next;
         }
         yLeaveCriticalSection(&hub->ws.chan[strym.tcpchan].access);
@@ -2659,14 +2647,14 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
 #endif
         if (req == NULL) {
             dbglog("WS: Drop frame for closed tcpChan %d (%s)\n", strym.tcpchan,
-                (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
+                   (strym.stream == YSTREAM_TCP_CLOSE ? "TCP_CLOSE" : "TCP"));
             return YAPI_IO_ERROR;
         }
         YASSERT(req->ws.state != REQ_CLOSED_BY_HUB);
         if (strym.stream == YSTREAM_TCP_CLOSE) {
             if (req->ws.asyncId) {
                 YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "WS: Synchronous close received instead of async-%d close for tcpchan %d (%p)\n",
-                    req->ws.asyncId, strym.tcpchan, req);
+                         req->ws.asyncId, strym.tcpchan, req);
                 //dumpReqQueue("recv",hub, strym.tcpchan);
                 return YAPI_IO_ERROR;
             }
@@ -2687,41 +2675,42 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
             yLeaveCriticalSection(&req->access);
         }
         ws_appendTCPData(req, buffer, pktlen);
-        if (strym.stream == YSTREAM_TCP_CLOSE){
+        if (strym.stream == YSTREAM_TCP_CLOSE) {
             ySetEvent(&req->finished);
         }
         break;
-    case YSTREAM_META: {
-        USB_Meta_Pkt* meta = (USB_Meta_Pkt*)(buffer);
-        WSLOG("%"FMTu64": META type=%d len=%d\n",reltime, meta->announce.metaType, pktlen);
-        switch (meta->announce.metaType) {
-        case USB_META_WS_ANNOUNCE:
-            if (meta->announce.version < USB_META_WS_PROTO_V1 || pktlen < USB_META_WS_ANNOUNCE_SIZE) {
-                return YAPI_SUCCESS;
-            }
-            hub->ws.remoteVersion = meta->announce.version;
-            hub->ws.remoteNounce = INTEL_U32(meta->announce.nonce);
-            maxtcpws = INTEL_U16(meta->announce.maxtcpws);
-            if (maxtcpws > 0) {
-                hub->ws.tcpMaxWindowSize = maxtcpws;
-            }
-            YSTRCPY(hub->ws.serial, YOCTO_SERIAL_LEN, meta->announce.serial);
-            WSLOG("hub(%s) Announce: %s (v%d / %x)\n", hub->name, meta->announce.serial, meta->announce.version, hub->ws.remoteNounce);
-            hub->ws.nounce = YRand32();
-            hub->ws.base_state = WS_BASE_AUTHENTICATING;
-            hub->ws.connectionTime = yapiGetTickCount();
-            return ws_sendAuthenticationMeta(hub, errmsg);
-        case USB_META_WS_AUTHENTICATION:
-            if (hub->ws.base_state != WS_BASE_AUTHENTICATING)
-                return YAPI_SUCCESS;
-            if (meta->auth.version < USB_META_WS_PROTO_V1 || (u32)pktlen < USB_META_WS_AUTHENTICATION_SIZE) {
-                return YAPI_SUCCESS;
-            }
-            hub->ws.tcpRoundTripTime = (u32)(yapiGetTickCount() - hub->ws.connectionTime + 1);
-            if (hub->ws.tcpMaxWindowSize < 2048 && hub->ws.tcpRoundTripTime < 7) {
-                // Fix overly optimistic round-trip on YoctoHubs
-                hub->ws.tcpRoundTripTime = 7;
-            }
+    case YSTREAM_META:
+        {
+            USB_Meta_Pkt* meta = (USB_Meta_Pkt*)(buffer);
+            //WSLOG("%"FMTu64": META type=%d len=%d\n",reltime, meta->announce.metaType, pktlen);
+            switch (meta->announce.metaType) {
+            case USB_META_WS_ANNOUNCE:
+                if (meta->announce.version < USB_META_WS_PROTO_V1 || pktlen < USB_META_WS_ANNOUNCE_SIZE) {
+                    return YAPI_SUCCESS;
+                }
+                hub->ws.remoteVersion = meta->announce.version;
+                hub->ws.remoteNounce = INTEL_U32(meta->announce.nonce);
+                maxtcpws = INTEL_U16(meta->announce.maxtcpws);
+                if (maxtcpws > 0) {
+                    hub->ws.tcpMaxWindowSize = maxtcpws;
+                }
+                YSTRCPY(hub->ws.serial, YOCTO_SERIAL_LEN, meta->announce.serial);
+                WSLOG("hub(%s) Announce: %s (v%d / %x)\n", hub->name, meta->announce.serial, meta->announce.version, hub->ws.remoteNounce);
+                hub->ws.nounce = YRand32();
+                hub->ws.base_state = WS_BASE_AUTHENTICATING;
+                hub->ws.connectionTime = yapiGetTickCount();
+                return ws_sendAuthenticationMeta(hub, errmsg);
+            case USB_META_WS_AUTHENTICATION:
+                if (hub->ws.base_state != WS_BASE_AUTHENTICATING)
+                    return YAPI_SUCCESS;
+                if (meta->auth.version < USB_META_WS_PROTO_V1 || (u32)pktlen < USB_META_WS_AUTHENTICATION_SIZE) {
+                    return YAPI_SUCCESS;
+                }
+                hub->ws.tcpRoundTripTime = (u32)(yapiGetTickCount() - hub->ws.connectionTime + 1);
+                if (hub->ws.tcpMaxWindowSize < 2048 && hub->ws.tcpRoundTripTime < 7) {
+                    // Fix overly optimistic round-trip on YoctoHubs
+                    hub->ws.tcpRoundTripTime = 7;
+                }
 #ifdef DEBUG_WEBSOCKET
             {
                 int uploadRate = hub->ws.tcpMaxWindowSize * 1000 / hub->ws.tcpRoundTripTime;
@@ -2729,112 +2718,113 @@ static int ws_parseIncomingFrame(HubSt* hub, u8* buffer, int pktlen, char* errms
             }
 #endif
 
-            flags = meta->auth.flags;
-            if ((flags & USB_META_WS_AUTH_FLAGS_RW) != 0) {
-                hub->rw_access = 1;
-            }
-            if (hub->ws.user != INVALID_HASH_IDX) {
-                user = yHashGetStrPtr(hub->ws.user);
-            } else {
-                user = "";
-            }
-
-            if (hub->ws.pass != INVALID_HASH_IDX) {
-                pass = yHashGetStrPtr(hub->ws.pass);
-            } else {
-                pass = "";
-            }
-            if ((flags & USB_META_WS_AUTH_FLAGS_VALID) != 0) {
-                u8 ha1[16];
-                ComputeAuthHA1(ha1, user, pass, hub->ws.serial);
-                if (CheckWSAuth(hub->ws.nounce, ha1, meta->auth.sha1, NULL)) {
-                    hub->ws.base_state = WS_BASE_CONNECTED;
-                    hub->state = NET_HUB_ESTABLISHED;
-                    hub->retryCount = 0;
-                    hub->attemptDelay = 500;
-                    WSLOG("hub(%s): connected as %s\n", hub->name, user);
-                } else {
-                    YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication as %s failed (%s:%d)", user, __FILE_ID__, __LINE__);
-                    return YAPI_UNAUTHORIZED;
+                flags = meta->auth.flags;
+                if ((flags & USB_META_WS_AUTH_FLAGS_RW) != 0) {
+                    hub->rw_access = 1;
                 }
-            } else {
-                if (hub->ws.user == INVALID_HASH_IDX) {
-                    hub->ws.base_state = WS_BASE_CONNECTED;
-                    hub->state = NET_HUB_ESTABLISHED;
-                    hub->retryCount = 0;
-                    hub->attemptDelay = 500;
-                    WSLOG("hub(%s): connected\n",hub->name);
+                if (hub->ws.user != INVALID_HASH_IDX) {
+                    user = yHashGetStrPtr(hub->ws.user);
                 } else {
-                    if (YSTRCMP(user,"admin") == 0 && !hub->rw_access) {
-                        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication as %s failed", user);
+                    user = "";
+                }
+
+                if (hub->ws.pass != INVALID_HASH_IDX) {
+                    pass = yHashGetStrPtr(hub->ws.pass);
+                } else {
+                    pass = "";
+                }
+                if ((flags & USB_META_WS_AUTH_FLAGS_VALID) != 0) {
+                    u8 ha1[16];
+                    ComputeAuthHA1(ha1, user, pass, hub->ws.serial);
+                    if (CheckWSAuth(hub->ws.nounce, ha1, meta->auth.sha1, NULL)) {
+                        hub->ws.base_state = WS_BASE_CONNECTED;
+                        hub->state = NET_HUB_ESTABLISHED;
+                        hub->retryCount = 0;
+                        hub->attemptDelay = 500;
+                        WSLOG("hub(%s): connected as %s\n", hub->name, user);
                     } else {
-                        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication error : hub has no password for %s", user);
+                        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication as %s failed (%s:%d)", user, __FILE_ID__, __LINE__);
+                        return YAPI_UNAUTHORIZED;
                     }
-                    return YAPI_UNAUTHORIZED;
-                }
-            }
-            break;
-        case USB_META_WS_ERROR:
-            if (INTEL_U16(meta->error.htmlcode) == 401) {
-                return YERR(YAPI_UNAUTHORIZED);
-            } else {
-                YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Remote hub closed connection with error %d", INTEL_U16(meta->error.htmlcode));
-                return YAPI_IO_ERROR;
-            }
-        case USB_META_ACK_UPLOAD: {
-            int tcpchan = meta->uploadAck.tcpchan;
-            yEnterCriticalSection(&hub->ws.chan[tcpchan].access);
-            req = hub->ws.chan[tcpchan].requests;
-            while (req != NULL && req->ws.state != REQ_OPEN) {
-                req = req->ws.next;
-            }
-            yLeaveCriticalSection(&hub->ws.chan[tcpchan].access);
-            if (req) {
-                u32 ackBytes = meta->uploadAck.totalBytes[0] + (meta->uploadAck.totalBytes[1] << 8) + (meta->uploadAck.totalBytes[2] << 16) + (meta->uploadAck.totalBytes[3] << 24);
-                u64 ackTime = yapiGetTickCount();
-                if (hub->ws.chan[tcpchan].lastUploadAckTime && ackBytes > hub->ws.chan[tcpchan].lastUploadAckBytes) {
-                    int deltaBytes;
-                    u64 deltaTime;
-                    u32 newRate;
-                    hub->ws.chan[tcpchan].lastUploadAckBytes = ackBytes;
-                    hub->ws.chan[tcpchan].lastUploadAckTime = ackTime;
-
-                    deltaBytes = ackBytes - hub->ws.chan[tcpchan].lastUploadRateBytes;
-                    deltaTime = ackTime - hub->ws.chan[tcpchan].lastUploadRateTime;
-                    WSLOG("delta  bytes=%d  time=%"FMTu64"ms\n",deltaBytes, deltaTime);
-                    if (deltaTime < 500) {
-                        break; // wait more
-                    }
-                    if (deltaTime < 1000 && deltaBytes < 65536) {
-                        break; // wait more
-                    }
-                    hub->ws.chan[tcpchan].lastUploadRateBytes = ackBytes;
-                    hub->ws.chan[tcpchan].lastUploadRateTime = ackTime;
-                    if (req->progressCb && req->ws.requestsize) {
-                        req->progressCb(req->progressCtx, ackBytes, req->ws.requestsize);
-                    }
-                    newRate = (u32)(deltaBytes * 1000 / deltaTime);
-                    hub->ws.uploadRate = (u32)(0.8 * hub->ws.uploadRate + 0.3 * newRate);
-                    WSLOG("New rate: %.2f KB/s (based on %.2f KB in %.2fs)\n", hub->ws.uploadRate / 1000.0, deltaBytes / 1000.0, deltaTime / 1000.0);
                 } else {
-                    WSLOG("First ack received (rate=%d)\n", hub->ws.uploadRate);
-                    hub->ws.chan[tcpchan].lastUploadAckBytes = ackBytes;
-                    hub->ws.chan[tcpchan].lastUploadAckTime = ackTime;
-                    hub->ws.chan[tcpchan].lastUploadRateBytes = ackBytes;
-                    hub->ws.chan[tcpchan].lastUploadRateTime = ackTime;
-                    if (req->progressCb && req->ws.requestsize) {
-                        req->progressCb(req->progressCtx, ackBytes, req->ws.requestsize);
+                    if (hub->ws.user == INVALID_HASH_IDX) {
+                        hub->ws.base_state = WS_BASE_CONNECTED;
+                        hub->state = NET_HUB_ESTABLISHED;
+                        hub->retryCount = 0;
+                        hub->attemptDelay = 500;
+                        WSLOG("hub(%s): connected\n", hub->name);
+                    } else {
+                        if (YSTRCMP(user, "admin") == 0 && !hub->rw_access) {
+                            YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication as %s failed", user);
+                        } else {
+                            YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Authentication error : hub has no password for %s", user);
+                        }
+                        return YAPI_UNAUTHORIZED;
                     }
                 }
+                break;
+            case USB_META_WS_ERROR:
+                if (INTEL_U16(meta->error.htmlcode) == 401) {
+                    return YERR(YAPI_UNAUTHORIZED);
+                } else {
+                    YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Remote hub closed connection with error %d", INTEL_U16(meta->error.htmlcode));
+                    return YAPI_IO_ERROR;
+                }
+            case USB_META_ACK_UPLOAD:
+                {
+                    int tcpchan = meta->uploadAck.tcpchan;
+                    yEnterCriticalSection(&hub->ws.chan[tcpchan].access);
+                    req = hub->ws.chan[tcpchan].requests;
+                    while (req != NULL && req->ws.state != REQ_OPEN) {
+                        req = req->ws.next;
+                    }
+                    yLeaveCriticalSection(&hub->ws.chan[tcpchan].access);
+                    if (req) {
+                        u32 ackBytes = meta->uploadAck.totalBytes[0] + (meta->uploadAck.totalBytes[1] << 8) + (meta->uploadAck.totalBytes[2] << 16) + (meta->uploadAck.totalBytes[3] << 24);
+                        u64 ackTime = yapiGetTickCount();
+                        if (hub->ws.chan[tcpchan].lastUploadAckTime && ackBytes > hub->ws.chan[tcpchan].lastUploadAckBytes) {
+                            int deltaBytes;
+                            u64 deltaTime;
+                            u32 newRate;
+                            hub->ws.chan[tcpchan].lastUploadAckBytes = ackBytes;
+                            hub->ws.chan[tcpchan].lastUploadAckTime = ackTime;
+
+                            deltaBytes = ackBytes - hub->ws.chan[tcpchan].lastUploadRateBytes;
+                            deltaTime = ackTime - hub->ws.chan[tcpchan].lastUploadRateTime;
+                            WSLOG("delta  bytes=%d  time=%"FMTu64"ms\n", deltaBytes, deltaTime);
+                            if (deltaTime < 500) {
+                                break; // wait more
+                            }
+                            if (deltaTime < 1000 && deltaBytes < 65536) {
+                                break; // wait more
+                            }
+                            hub->ws.chan[tcpchan].lastUploadRateBytes = ackBytes;
+                            hub->ws.chan[tcpchan].lastUploadRateTime = ackTime;
+                            if (req->progressCb && req->ws.requestsize) {
+                                req->progressCb(req->progressCtx, ackBytes, req->ws.requestsize);
+                            }
+                            newRate = (u32)(deltaBytes * 1000 / deltaTime);
+                            hub->ws.uploadRate = (u32)(0.8 * hub->ws.uploadRate + 0.3 * newRate);
+                            WSLOG("New rate: %.2f KB/s (based on %.2f KB in %.2fs)\n", hub->ws.uploadRate / 1000.0, deltaBytes / 1000.0, deltaTime / 1000.0);
+                        } else {
+                            WSLOG("First ack received (rate=%d)\n", hub->ws.uploadRate);
+                            hub->ws.chan[tcpchan].lastUploadAckBytes = ackBytes;
+                            hub->ws.chan[tcpchan].lastUploadAckTime = ackTime;
+                            hub->ws.chan[tcpchan].lastUploadRateBytes = ackBytes;
+                            hub->ws.chan[tcpchan].lastUploadRateTime = ackTime;
+                            if (req->progressCb && req->ws.requestsize) {
+                                req->progressCb(req->progressCtx, ackBytes, req->ws.requestsize);
+                            }
+                        }
+                    }
+                }
+                break;
+            default:
+                WSLOG("unhandled Meta pkt %d\n", meta->announce.metaType);
+                break;
             }
         }
         break;
-        default:
-            WSLOG("unhandled Meta pkt %d\n", meta->announce.metaType);
-            break;
-        }
-    }
-    break;
     case YSTREAM_NOTICE:
     case YSTREAM_REPORT:
     case YSTREAM_REPORT_V2:
@@ -2886,7 +2876,7 @@ static RequestSt* getNextReqToSend(HubSt* hub, int tcpchan)
     return req;
 }
 
-static RequestSt* closeAllReq(HubSt* hub, int err, const char *errmsg)
+static RequestSt* closeAllReq(HubSt* hub, int err, const char* errmsg)
 {
     RequestSt* req = NULL;
 
@@ -2923,7 +2913,7 @@ static int ws_processRequests(HubSt* hub, char* errmsg)
     int res;
 
     if (hub->state != NET_HUB_ESTABLISHED) {
-        //WSLOG("Skip request process until hub is connected\n");
+        WSLOG("Skip request process until hub is connected\n");
         return YAPI_SUCCESS;
     }
 
@@ -2938,14 +2928,14 @@ static int ws_processRequests(HubSt* hub, char* errmsg)
         while ((req = getNextReqToSend(hub, tcpchan)) != NULL) {
             int throttle_start;
             int throttle_end;
-            if (req->ws.flags & WS_FLG_NEED_API_CLOSE){
+            if (req->ws.flags & WS_FLG_NEED_API_CLOSE) {
                 int res = ws_sendFrame(hub, YSTREAM_TCP_CLOSE, tcpchan, NULL, 0, errmsg);
                 if (res < 0) {
                     dbglog("req(%s:%p) unable to ack remote close (%d/%s)\n", req->hub->name, req, res, errmsg);
                 }
                 yEnterCriticalSection(&req->access);
                 req->ws.flags &= ~WS_FLG_NEED_API_CLOSE;
-                if (req->ws.state == REQ_OPEN){
+                if (req->ws.state == REQ_OPEN) {
                     req->ws.state = REQ_CLOSED_BY_API;
                 } else {
                     req->ws.state = REQ_CLOSED_BY_BOTH;
@@ -3031,7 +3021,7 @@ static int ws_processRequests(HubSt* hub, char* errmsg)
                     }
                     tmp_data[datalen] = req->ws.asyncId;
                     res = ws_sendFrame(hub, stream, tcpchan, tmp_data, datalen + 1, errmsg);
-                    WSLOG("req(%s:%p) sent async close chan%d:%d\n", req->hub->name, req, tcpchan,req->ws.asyncId);
+                    WSLOG("req(%s:%p) sent async close chan%d:%d\n", req->hub->name, req, tcpchan, req->ws.asyncId);
                     //dumpReqQueue("as_c", req->hub, tcpchan);
                     req->ws.last_write_tm = yapiGetTickCount();
                 } else {
@@ -3074,8 +3064,6 @@ static int ws_openBaseSocket(HubSt* basehub, int first_notification_connection, 
 {
     char buffer[YOCTO_HOSTNAME_NAME];
     IPvX_ADDR ip;
-    u16 port;
-    yAsbUrlProto proto;
     yStrRef user, pass, subdomain;
     int res, request_len;
     char request[256];
@@ -3100,7 +3088,7 @@ static int ws_openBaseSocket(HubSt* basehub, int first_notification_connection, 
     wshub->skt = INVALID_SOCKET_MULTI;
     wshub->s_next_async_id = 48;
 
-    switch (yHashGetUrlPort(basehub->url, buffer, &port, &proto, &user, &pass, &subdomain)) {
+    switch (yHashGetUrlPort(basehub->url, buffer, NULL, NULL, &user, &pass, &subdomain)) {
     case NAME_URL:
         res = resolveDNSCache(basehub->url, &ip, errmsg);
         if (res < 0) {
@@ -3113,7 +3101,7 @@ static int ws_openBaseSocket(HubSt* basehub, int first_notification_connection, 
     default:
         return YERRMSG(YAPI_IO_ERROR, "not an IP hub");
     }
-    if (proto == PROTO_HTTP || proto == PROTO_SECURE_HTTP) {
+    if (basehub->proto == PROTO_HTTP || basehub->proto == PROTO_SECURE_HTTP) {
         return YERRMSG(YAPI_IO_ERROR, "not a WebSocket url");
     }
     if (subdomain == INVALID_HASH_IDX) {
@@ -3129,7 +3117,7 @@ static int ws_openBaseSocket(HubSt* basehub, int first_notification_connection, 
         YSPRINTF(request, 256, "GET %s/not.byn?abs=%u", subdomain_buf, basehub->notifAbsPos);
     }
 
-    res = yTcpOpenMulti(&wshub->skt, &ip, port, proto == PROTO_SECURE_WEBSOCKET, mstimout, errmsg);
+    res = yTcpOpenMulti(&wshub->skt, &ip, basehub->portno, basehub->proto == PROTO_SECURE_WEBSOCKET, mstimout, errmsg);
     if (YISERR(res)) {
         // yTcpOpen has reset the socket to INVALID
         //yTcpCloseMulti(wshub->skt);
@@ -3185,7 +3173,7 @@ static int ws_openBaseSocket(HubSt* basehub, int first_notification_connection, 
 static void ws_closeBaseSocket(struct _WSNetHubSt* base_req)
 {
     yTcpCloseMulti(base_req->skt);
-    TRACE_WS_SOCK_APPEND("ws_dump.txt",0,"Close",NULL,0,  base_req->bws_open_tm);
+    TRACE_WS_SOCK_APPEND("ws_dump.txt", 0, "Close", NULL, 0, base_req->bws_open_tm);
     base_req->skt = INVALID_SOCKET_MULTI;
     yFifoEmpty(&base_req->mainfifo);
 }
@@ -3234,6 +3222,7 @@ static int ws_thread_select(struct _WSNetHubSt* base_req, u64 ms, WakeUpSocket* 
     if (res >= 0) {
         if (wuce && FD_ISSET(wuce->listensock, &fds)) {
             int signal = yConsumeWakeUpSocket(wuce, errmsg);
+            //dbglog("exit from sleep with WUCE (%d)\n", signal);
             YPROPERR(signal);
         }
         if (yTcpFdIsSetMulti(base_req->skt, &fds)) {
@@ -3246,7 +3235,7 @@ static int ws_thread_select(struct _WSNetHubSt* base_req, u64 ms, WakeUpSocket* 
                 }
                 readed = yTcpReadMulti(base_req->skt, buffer, avail, errmsg);
                 if (readed > 0) {
-                    TRACE_WS_SOCK_APPEND("ws_dump.txt",0,"---> READ",buffer,readed, base_req->bws_open_tm);
+                    TRACE_WS_SOCK_APPEND("ws_dump.txt", 0, "---> READ", buffer, readed, base_req->bws_open_tm);
                     yPushFifo(&base_req->mainfifo, buffer, readed);
                 }
             }
@@ -3298,12 +3287,12 @@ void* ws_thread(void* ctx)
             do {
                 //minimal timeout is always 500
                 yApproximateSleep(100);
-            } while (timeout > yapiGetTickCount()&& !yThreadMustEnd(thread));
+            } while (timeout > yapiGetTickCount() && !yThreadMustEnd(thread));
         }
         if (hub->state == NET_HUB_TOCLOSE) {
             break;
         }
-        TRACE_WS_SOCK_APPEND("ws_dump.txt",1,"Open Socket",NULL,0, yapiGetTickCount());
+        TRACE_WS_SOCK_APPEND("ws_dump.txt", 1, "Open Socket", NULL, 0, yapiGetTickCount());
         res = ws_openBaseSocket(hub, first_notification_connection, 1000, errmsg);
         hub->lastAttempt = yapiGetTickCount();
         if (YISERR(res)) {
@@ -3338,7 +3327,7 @@ void* ws_thread(void* ctx)
             res = ws_thread_select(&hub->ws, wait, &hub->wuce, errmsg);
 #if 1
             if (YISERR(res)) {
-                TRACE_WS_SOCK_APPEND("ws_dump.txt",0,"ws_thread_select error",NULL,0, hub->lastAttempt);
+                TRACE_WS_SOCK_APPEND("ws_dump.txt", 0, "ws_thread_select error", NULL, 0, hub->lastAttempt);
                 WSLOG("hub(%s) ws_thread_select error %d", hub->name, res);
             }
 #endif
@@ -3460,15 +3449,15 @@ void* ws_thread(void* ctx)
                                 header[1] = 0x82;
                                 mask = YRand32();
                                 memcpy(header + 2, &mask, sizeof(u32));
-                                header[6] = 0x03 ^ ((u8 *)&mask)[0];
-                                header[7] = 0xe8 ^ ((u8 *)&mask)[1];
+                                header[6] = 0x03 ^ ((u8*)&mask)[0];
+                                header[7] = 0xe8 ^ ((u8*)&mask)[1];
                                 res = yTcpWriteMulti(hub->ws.skt, header, 8, errmsg);
                                 if (YISERR(res)) {
                                     break;
                                 }
                                 TRACE_WS_SOCK_APPEND("ws_dump.txt", 0, "<--- WRITE", header, 8, hub->ws.bws_open_tm);
                                 res = YAPI_NO_MORE_DATA;
-                                YSTRCPY(errmsg, YOCTO_ERRMSG_LEN,"WebSocket connection close received");
+                                YSTRCPY(errmsg, YOCTO_ERRMSG_LEN, "WebSocket connection close received");
                                 hub->ws.base_state = WS_BASE_OFFLINE;
 #ifdef DEBUG_WEBSOCKET
                                 dbglog("WS: IO error on base socket of %s(%X): %s\n", hub->name, hub->url, errmsg);
@@ -3517,9 +3506,9 @@ void* ws_thread(void* ctx)
                 } while (!need_more_data && !YISERR(res));
             }
             if (hub->send_ping && ((u64)(yapiGetTickCount() - hub->ws.lastTraffic)) > NET_HUB_NOT_CONNECTION_TIMEOUT) {
-              WSLOG("PING: network hub %s(%x) didn't respond for too long (%d)\n", hub->name, hub->url, res);
-              continue_processing = 0;
-              closeAllReq(hub, res, errmsg);
+                WSLOG("PING: network hub %s(%x) didn't respond for too long (%d)\n", hub->name, hub->url, res);
+                continue_processing = 0;
+                closeAllReq(hub, res, errmsg);
             } else if (!YISERR(res)) {
                 res = ws_processRequests(hub, errmsg);
                 if (YISERR(res)) {
@@ -3534,7 +3523,7 @@ void* ws_thread(void* ctx)
             }
         } while (continue_processing);
         if (YISERR(res)) {
-            WSLOG("WS: hub(%s) IO error %d:%s\n", hub->name,res, errmsg);
+            WSLOG("WS: hub(%s) IO error %d:%s\n", hub->name, res, errmsg);
             yEnterCriticalSection(&hub->access);
             hub->errcode = ySetErr(res, hub->errmsg, errmsg, NULL, 0);
             yLeaveCriticalSection(&hub->access);
@@ -3779,7 +3768,7 @@ static void ySSDPUpdateCache(SSDPInfos* SSDP, const char* uuid, const char* url,
         SSDP_CACHE_ENTRY* p = SSDP->SSDPCache[i];
         if (p == NULL)
             break;
-        if (YSTRCMP(uuid,p->uuid) == 0) {
+        if (YSTRCMP(uuid, p->uuid) == 0) {
             p->detectedTime = yapiGetTickCount();
             p->maxAge = cacheValidity;
             if (YSTRCMP(url, p->url)) {
@@ -3802,7 +3791,7 @@ static void ySSDPUpdateCache(SSDPInfos* SSDP, const char* uuid, const char* url,
             yFree(p);
             return;
         }
-        YSTRCPY(p->url,SSDP_URL_LEN,url);
+        YSTRCPY(p->url, SSDP_URL_LEN, url);
         p->detectedTime = yapiGetTickCount();
         p->maxAge = cacheValidity;
         SSDP->SSDPCache[i] = p;
@@ -3905,7 +3894,7 @@ static void ySSDP_parseSSPDMessage(SSDPInfos* SSDP, char* message, int msg_len)
             if (!*p) return;
             urn = p;
             // parse Location
-            if (YSTRNCMP(location,"http://",7) == 0) {
+            if (YSTRNCMP(location, "http://", 7) == 0) {
                 location += 7;
             }
             p = location;
@@ -3916,7 +3905,7 @@ static void ySSDP_parseSSPDMessage(SSDPInfos* SSDP, char* message, int msg_len)
             while (*p && *p++ != '=');
             if (!*p) return;
             cacheVal = atoi(p);
-            if (YSTRCMP(urn,YSSDP_URN_YOCTOPUCE) == 0) {
+            if (YSTRCMP(urn, YSSDP_URN_YOCTOPUCE) == 0) {
                 ySSDPUpdateCache(SSDP, uuid, location, cacheVal);
             }
         }
@@ -3942,7 +3931,7 @@ static void* ySSDP_thread(void* ctx)
 
 
     yThreadSignalStart(thread);
-    yFifoInit(&inFifo,buffer,sizeof(buffer));
+    yFifoInit(&inFifo, buffer, sizeof(buffer));
 
     while (!yThreadMustEnd(thread)) {
         memset(&timeout, 0, sizeof(timeout));
@@ -4015,7 +4004,7 @@ int ySSDPDiscover(SSDPInfos* SSDP, char* errmsg)
         sockaddr_dst.sin_port = htons(YSSDP_PORT);
         sockaddr_dst.sin_addr.s_addr = inet_addr(YSSDP_MCAST_ADDR_STR);
         len = (int)strlen(discovery);
-        sent = (int)sendto(SSDP->request_sock[i], discovery, len, 0, (struct sockaddr *)&sockaddr_dst, sizeof(struct sockaddr_in));
+        sent = (int)sendto(SSDP->request_sock[i], discovery, len, 0, (struct sockaddr*)&sockaddr_dst, sizeof(struct sockaddr_in));
         if (sent < 0) {
             return yNetSetErr();
         }
@@ -4047,7 +4036,7 @@ int ySSDPStart(SSDPInfos* SSDP, ssdpHubDiscoveryCallback callback, char* errmsg)
         }
 
         optval = 1;
-        setsockopt(SSDP->request_sock[i], SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+        setsockopt(SSDP->request_sock[i], SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
 #ifdef SO_REUSEPORT
         setsockopt(SSDP->request_sock[i], SOL_SOCKET, SO_REUSEPORT, (char *)&optval, sizeof(optval));
 #endif
@@ -4067,7 +4056,7 @@ int ySSDPStart(SSDPInfos* SSDP, ssdpHubDiscoveryCallback callback, char* errmsg)
         }
 
         optval = 1;
-        setsockopt(SSDP->notify_sock[i], SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+        setsockopt(SSDP->notify_sock[i], SOL_SOCKET, SO_REUSEADDR, (char*)&optval, sizeof(optval));
 #ifdef SO_REUSEPORT
         setsockopt(SSDP->notify_sock[i], SOL_SOCKET, SO_REUSEPORT, (char *)&optval, sizeof(optval));
 #endif
@@ -4078,7 +4067,7 @@ int ySSDPStart(SSDPInfos* SSDP, ssdpHubDiscoveryCallback callback, char* errmsg)
         sockaddr.sin_family = AF_INET;
         sockaddr.sin_port = htons(YSSDP_PORT);
         sockaddr.sin_addr.s_addr = 0;
-        if (bind(SSDP->notify_sock[i], (struct sockaddr *)&sockaddr, socksize) < 0) {
+        if (bind(SSDP->notify_sock[i], (struct sockaddr*)&sockaddr, socksize) < 0) {
             return yNetSetErr();
         }
 
@@ -4093,7 +4082,7 @@ int ySSDPStart(SSDPInfos* SSDP, ssdpHubDiscoveryCallback callback, char* errmsg)
     }
     //yThreadCreate will not create a new thread if there is already one running
     if (yThreadCreateNamed(&SSDP->thread, "ssdp", ySSDP_thread, SSDP) < 0) {
-        return YERRMSG(YAPI_IO_ERROR,"Unable to start helper thread");
+        return YERRMSG(YAPI_IO_ERROR, "Unable to start helper thread");
     }
     SSDP->started = 1;
     return ySSDPDiscover(SSDP, errmsg);

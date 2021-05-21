@@ -1,6 +1,7 @@
-option(USE_YSSL "Include SSL/TLS support" OFF)
+option(USE_YSSL "Include SSL/TLS support" ON)
 
 if(USE_YSSL)
+add_subdirectory(mbedtls)
 else()
 add_compile_definitions(NO_YSSL)
 endif()
@@ -24,6 +25,11 @@ set(YAPI_C_FILES
 )
 
 add_library (yapi  ${YAPI_C_FILES})
+if(USE_YSSL)
+	target_include_directories(yapi  PRIVATE mbedtls/include)
+	target_link_libraries(yapi mbedtls)
+endif()
+
 
 # add pthread usb-1.0 library only on linux
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")

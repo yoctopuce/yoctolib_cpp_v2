@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.c 44847 2021-05-03 09:04:43Z web $
+ * $Id: yssl.c 45122 2021-05-18 08:41:17Z web $
  *
  * Implementation of a client TCP stack with SSL
  *
@@ -87,7 +87,7 @@ static mbedtls_pk_context pkey;
 
 static void my_debug(void* ctx, int level, const char* file, int line, const char* str)
 {
-    //dbglog("%s:%04d: %s", file, line, str );
+    dbglog("%s:%04d: %s", file, line, str);
 }
 
 #endif
@@ -254,18 +254,20 @@ int yssl_generate_certificate(const char* keyfile, const char* certfile,
 
 static void yssl_mutex_init(mbedtls_threading_mutex_t* mutex)
 {
-
     yInitializeCriticalSection(&mutex->mutex);
 }
+
 static void yssl_mutex_free(mbedtls_threading_mutex_t* mutex)
 {
     yDeleteCriticalSection(&mutex->mutex);
 }
+
 static int yssl_mutex_lock(mbedtls_threading_mutex_t* mutex)
 {
     yEnterCriticalSection(&mutex->mutex);
     return 0;
 }
+
 static int yssl_mutex_unlock(mbedtls_threading_mutex_t* mutex)
 {
     yLeaveCriticalSection(&mutex->mutex);
@@ -273,16 +275,22 @@ static int yssl_mutex_unlock(mbedtls_threading_mutex_t* mutex)
 }
 
 
-
 int yTcpInitSSL(char* errmsg)
 {
     int ret;
     SSLLOG("Init OpenSSL\n");
 
+
+#ifdef DEBUG_SSL
+    // activate debug logs
+    mbedtls_debug_set_threshold(1);
+#endif
+
+
     mbedtls_threading_set_alt(yssl_mutex_init,
-        yssl_mutex_free,
-        yssl_mutex_lock,
-        yssl_mutex_unlock);
+                              yssl_mutex_free,
+                              yssl_mutex_lock,
+                              yssl_mutex_unlock);
 
 
     mbedtls_x509_crt_init(&cachain);
@@ -290,15 +298,21 @@ int yTcpInitSSL(char* errmsg)
     mbedtls_ctr_drbg_init(&ctr_drbg);
     mbedtls_pk_init(&pkey);
 
-    dbglog("Seeding the random number generator...\n");
+    SSLLOG("Seeding the random number generator...\n");
     mbedtls_entropy_init(&entropy);
     ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
-                                &entropy, NULL,0);
+                                &entropy, NULL, 0);
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
     }
+#if 0
+    //ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)mbedtls_test_cas_pem,
+    //mbedtls_test_cas_pem_len);
 
-    mbedtls_debug_set_threshold(1);
+    if (ret != 0) {
+        return FMT_MBEDTLS_ERR(ret);
+    }
+#endif
     return YAPI_SUCCESS;
 }
 
@@ -401,6 +415,7 @@ static int mbedtls_yread(void* ctx, unsigned char* buf, size_t avail)
 static int do_ssl_handshake(YSSL_SOCKET yssl, char* errmsg)
 {
     int ret;
+    u32 flags;
 
     while ((ret = mbedtls_ssl_handshake(yssl->ssl)) != 0) {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -408,13 +423,35 @@ static int do_ssl_handshake(YSSL_SOCKET yssl, char* errmsg)
         }
     }
     SSLLOG("SSL handshake done\n");
+    SSLLOG("SSL Verifying peer X.509 certificate...\n");
+    if ((flags = mbedtls_ssl_get_verify_result(yssl->ssl)) != 0) {
+        if (yssl->flags & YSSL_TCP_SERVER_MODE && flags == MBEDTLS_X509_BADCERT_SKIP_VERIFY) {
+            return YAPI_SUCCESS;
+        }
+
+        mbedtls_x509_crt_verify_info(errmsg, YOCTO_ERRMSG_LEN,
+                                     "SSL:", flags);
+
+        if (flags == MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
+            // allow non trusted certificate since we have no root CA installed
+            dbglog("%s", errmsg);
+        } else {
+            return YAPI_SSL_ERROR;
+        }
+    }
+#ifdef DEBUG_SSL
+    else {
+        dbglog("SSL remote criticate is valid\n");
+    }
+#endif
     return YAPI_SUCCESS;
 }
 
 
-static int setup_ssl(yssl_socket_st* yssl, int server_mode, char* errmsg)
+static int setup_ssl(yssl_socket_st* yssl, char* errmsg)
 {
     int res;
+    int server_mode = yssl->flags & YSSL_TCP_SERVER_MODE;
 
     // we cannot share mbedtls config can be between multiples context
     // since some of our socket work as client and other work as server.
@@ -430,11 +467,13 @@ static int setup_ssl(yssl_socket_st* yssl, int server_mode, char* errmsg)
         return FMT_MBEDTLS_ERR(res);
     }
 
+#ifdef DEBUG_SSL
+    // activate debug logs
+    mbedtls_ssl_conf_dbg(yssl->ssl_conf, my_debug, yssl);
+#endif
     mbedtls_ssl_conf_ca_chain(yssl->ssl_conf, &cachain, NULL);
     mbedtls_ssl_conf_rng(yssl->ssl_conf, mbedtls_ctr_drbg_random, &ctr_drbg);
 
-
-    //mbedtls_ssl_conf_authmode( yssl->ssl_conf, MBEDTLS_SSL_VERIFY_OPTIONAL );
     if (server_mode) {
         res = mbedtls_ssl_conf_own_cert(yssl->ssl_conf, &srvcert, &pkey);
         if (res != 0) {
@@ -442,14 +481,9 @@ static int setup_ssl(yssl_socket_st* yssl, int server_mode, char* errmsg)
             return FMT_MBEDTLS_ERR(res);
         }
     } else {
-        mbedtls_ssl_conf_authmode(yssl->ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+        mbedtls_ssl_conf_authmode(yssl->ssl_conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
     }
 
-
-#ifdef DEBUG_SSL
-    // activate debug logs
-    mbedtls_ssl_conf_dbg(yssl->ssl_conf, my_debug, yssl);
-#endif
 
     // create SSL context
     yssl->ssl = yMalloc(sizeof(mbedtls_ssl_context));
@@ -487,7 +521,7 @@ int yTcpOpenSSL(YSSL_SOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, cha
         return res;
     }
 
-    res = setup_ssl(yssl, 0, errmsg);
+    res = setup_ssl(yssl, errmsg);
     if (res < 0) {
         yFree(yssl);
         return res;
@@ -505,8 +539,9 @@ int yTcpAcceptSSL(YSSL_SOCKET* newskt, YSOCKET sock, char* errmsg)
     SSLLOG("YSSL: accept %p [skt=%d]\n", newskt, sock);
     yssl = yMalloc(sizeof(yssl_socket_st));
     memset(yssl, 0, sizeof(yssl_socket_st));
+    yssl->flags |= YSSL_TCP_SERVER_MODE;
     yssl->tcpskt = sock;
-    res = setup_ssl(yssl, 1, errmsg);
+    res = setup_ssl(yssl, errmsg);
     if (res < 0) {
         yFree(yssl);
         return res;
@@ -608,7 +643,7 @@ int yTcpReadSSL(YSSL_SOCKET yssl, u8* buffer, int len, char* errmsg)
     do {
         int decrypted = 0;
         res = mbedtls_ssl_read(yssl->ssl, ptr, len);
-        if (res == 0) {
+        if (res == 0 || res == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
             yssl->flags |= YSSL_TCP_SOCK_CLOSED;
         } else if (res < 0) {
             if (res != MBEDTLS_ERR_SSL_WANT_READ && res != MBEDTLS_ERR_SSL_WANT_WRITE) {

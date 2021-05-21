@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.h 44777 2021-04-30 09:02:57Z web $
+ * $Id: yssl.h 45122 2021-05-18 08:41:17Z web $
  *
  *  Declaration of a client TCP stack
  *
@@ -41,7 +41,6 @@
 #define YSSL_H
 
 
-
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -70,13 +69,13 @@ __forceinline void __SSLLOG(fmt,...){}
 
 #define YSSL_BUFFER_SIZE  1024
 #define YSSL_TCP_SOCK_CLOSED  1
+#define YSSL_TCP_SERVER_MODE  2
 
-typedef struct
-{
-  YSOCKET tcpskt; // tcp socket
-  u32   flags;
-  void *ssl; // ssl context
-  void *ssl_conf; // ssl config (used by ssl context)
+typedef struct {
+    YSOCKET tcpskt; // tcp socket
+    u32 flags;
+    void* ssl; // ssl context
+    void* ssl_conf; // ssl config (used by ssl context)
 } yssl_socket_st;
 
 #define YSSL_SOCKET yssl_socket_st*
@@ -99,11 +98,11 @@ u32 yTcpGetRcvBufSizeSSL(YSSL_SOCKET skt);
  * some helper function that need to be called after yTcpInitSSL()
  */
 int yssl_generate_private_key(const char* keyfile, char* errmsg);
-int yssl_write_certificate(void *crt, const char *certfilename, char* errmsg);
-int yssl_generate_certificate(const char* keyfile, const char *certfile,
-                        const char* country, const char* state,
-                        const char* organisation,const char* common_name,
-                        time_t expiration, char* errmsg);
+int yssl_write_certificate(void* crt, const char* certfilename, char* errmsg);
+int yssl_generate_certificate(const char* keyfile, const char* certfile,
+                              const char* country, const char* state,
+                              const char* organisation, const char* common_name,
+                              time_t expiration, char* errmsg);
 
 #else
 typedef u32 YSSL_SOCKET;

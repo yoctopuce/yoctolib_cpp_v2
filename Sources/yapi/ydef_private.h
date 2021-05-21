@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef.h 39141 2020-01-15 16:02:31Z seb $
+ * $Id: ydef_private.h 44979 2021-05-10 11:00:58Z web $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -82,7 +82,7 @@ typedef int BSD_SOCKET;
 void ypanic(int line);
 #define YPANIC panic(__LINE__)
 #else
-void ypanic(const char *file, int line);
+void ypanic(const char* file, int line);
 #ifdef FREERTOS_API
 #ifndef __FILE_ID__
 #define __FILE_ID__ __FILE__
@@ -91,12 +91,6 @@ void ypanic(const char *file, int line);
 #else
 #define YPANIC YDEBUG_BREAK
 #endif
-#endif
-
-
-//#define ENABLE_SSL
-#ifndef WINDOWS_API
-//#define ENABLE_SSL
 #endif
 
 #ifdef  __cplusplus

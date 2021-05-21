@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ytcp.h 44625 2021-04-21 08:00:40Z seb $
+ * $Id: ytcp.h 44979 2021-05-10 11:00:58Z web $
  *
  *  Declaration of a client TCP stack
  *
@@ -40,7 +40,6 @@
 
 #ifndef YTCP_H
 #define YTCP_H
-
 
 
 #ifdef  __cplusplus
@@ -83,7 +82,7 @@ extern "C" {
 
 #define yNetSetErr()  yNetSetErrEx(__FILE_ID__, __LINE__,SOCK_ERR,errmsg)
 
-int yNetSetErrEx(const char *fileid, u32 line,unsigned err,char *errmsg);
+int yNetSetErrEx(const char* fileid, u32 line, unsigned err, char* errmsg);
 
 #define DEFAULT_HTTPS_PORT 443
 #define DEFAULT_HTTP_PORT 80
@@ -98,13 +97,13 @@ typedef struct {
     YSOCKET signalsock;
 } WakeUpSocket;
 
-void yDupSet(char **storage, const char *val);
-void yInitWakeUpSocket(WakeUpSocket *wuce);
-int  yStartWakeUpSocket(WakeUpSocket *wuce, char *errmsg);
-int  yDringWakeUpSocket(WakeUpSocket *wuce, u8 signal, char *errmsg);
-int  yConsumeWakeUpSocket(WakeUpSocket *wuce, char *errmsg);
-void yFreeWakeUpSocket(WakeUpSocket *wuce);
-int yTcpDownload(const char *host, int port, int usessl, const char *url, u8 **out_buffer, u32 mstimeout, char *errmsg);
+void yDupSet(char** storage, const char* val);
+void yInitWakeUpSocket(WakeUpSocket* wuce);
+int yStartWakeUpSocket(WakeUpSocket* wuce, char* errmsg);
+int yDringWakeUpSocket(WakeUpSocket* wuce, u8 signal, char* errmsg);
+int yConsumeWakeUpSocket(WakeUpSocket* wuce, char* errmsg);
+void yFreeWakeUpSocket(WakeUpSocket* wuce);
+int yTcpDownload(const char* host, int port, int usessl, const char* url, u8** out_buffer, u32 mstimeout, char* errmsg);
 
 int yResolveDNS(const char* name, IPvX_ADDR* addr, char* errmsg);
 
@@ -121,6 +120,7 @@ int yTcpCheckSocketStillValidBasic(YSOCKET skt, char* errmsg);
 
 typedef struct {
     int secure_socket;
+
     union {
         YSOCKET basic;
         YSSL_SOCKET secure;
@@ -133,12 +133,12 @@ typedef struct {
 #define INVALID_SOCKET_MULTI NULL
 
 
-int yTcpInitMulti(char *errmsg);
+int yTcpInitMulti(char* errmsg);
 int yTcpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR* ip, u16 port, int useSSL, u64 mstimeout, char* errmsg);
 int yTcpAcceptMulti(YSOCKET_MULTI* newskt, YSOCKET sock, int useSSL, char* errmsg);
 void yTcpCloseMulti(YSOCKET_MULTI skt);
-YSOCKET yTcpFdSetMulti(YSOCKET_MULTI skt, void *set, YSOCKET sktmax);
-int yTcpFdIsSetMulti(YSOCKET_MULTI skt, void *set);
+YSOCKET yTcpFdSetMulti(YSOCKET_MULTI skt, void* set, YSOCKET sktmax);
+int yTcpFdIsSetMulti(YSOCKET_MULTI skt, void* set);
 int yTcpCheckSocketStillValidMulti(YSOCKET_MULTI skt, char* errmsg);
 int yTcpReadMulti(YSOCKET_MULTI skt, u8* buffer, int len, char* errmsg);
 u32 yTcpGetRcvBufSizeMulti(YSOCKET_MULTI sock);
@@ -146,18 +146,17 @@ int yTcpWriteMulti(YSOCKET_MULTI skt, const u8* buffer, int len, char* errmsg);
 void yTcpShutdownMulti(void);
 
 
-
-struct _RequestSt * yReqAlloc( struct _HubSt *hub);
-int  yReqOpen(struct _RequestSt *tcpreq, int wait_for_start, int tcpchan, const char *request, int reqlen, u64 mstimeout, yapiRequestAsyncCallback callback, void *context, yapiRequestProgressCallback progress_cb, void *progress_ctx, char *errmsg);
-int  yReqIsAsync(struct _RequestSt *req);
-int  yReqSelect(struct _RequestSt *tcpreq, u64 ms, char *errmsg);
-int  yReqMultiSelect(struct _RequestSt **tcpreq, int size, u64 ms, WakeUpSocket *wuce, char *errmsg);
-int  yReqIsEof(struct _RequestSt *tcpreq, char *errmsg);
-int  yReqGet(struct _RequestSt *tcpreq, u8 **buffer);
-int  yReqRead(struct _RequestSt *rcoreq, u8 *buffer, int len);
-void yReqClose(struct _RequestSt *tcpreq);
-void yReqFree(struct _RequestSt *tcpreq);
-int  yReqHasPending(struct _HubSt *hub);
+struct _RequestSt* yReqAlloc(struct _HubSt* hub);
+int yReqOpen(struct _RequestSt* tcpreq, int wait_for_start, int tcpchan, const char* request, int reqlen, u64 mstimeout, yapiRequestAsyncCallback callback, void* context, yapiRequestProgressCallback progress_cb, void* progress_ctx, char* errmsg);
+int yReqIsAsync(struct _RequestSt* req);
+int yReqSelect(struct _RequestSt* tcpreq, u64 ms, char* errmsg);
+int yReqMultiSelect(struct _RequestSt** tcpreq, int size, u64 ms, WakeUpSocket* wuce, char* errmsg);
+int yReqIsEof(struct _RequestSt* tcpreq, char* errmsg);
+int yReqGet(struct _RequestSt* tcpreq, u8** buffer);
+int yReqRead(struct _RequestSt* rcoreq, u8* buffer, int len);
+void yReqClose(struct _RequestSt* tcpreq);
+void yReqFree(struct _RequestSt* tcpreq);
+int yReqHasPending(struct _HubSt* hub);
 
 
 void* ws_thread(void* ctx);
@@ -184,36 +183,35 @@ int yDetectNetworkInterfaces(u32 only_ip);
 #define SSDP_UUID_LEN   48
 #define SSDP_URL_LEN    48
 
-typedef struct
-{
-    char        serial[YOCTO_SERIAL_LEN];
-    char        uuid[SSDP_UUID_LEN];
-    char        url[SSDP_URL_LEN];
-    u64         detectedTime;
-    u64         maxAge;
+typedef struct {
+    char serial[YOCTO_SERIAL_LEN];
+    char uuid[SSDP_UUID_LEN];
+    char url[SSDP_URL_LEN];
+    u64 detectedTime;
+    u64 maxAge;
 } SSDP_CACHE_ENTRY;
 
 
 // prototype of the ssdp hub discovery callback
 // will be called on discover, refresh, and expiration
-typedef void (*ssdpHubDiscoveryCallback)(const char *serial, const char *urlToRegister, const char *urlToUnregister);
+typedef void (*ssdpHubDiscoveryCallback)(const char* serial, const char* urlToRegister, const char* urlToUnregister);
 
 #define NB_SSDP_CACHE_ENTRY 64
 #define NB_OS_IFACES 8
 
 
 typedef struct {
-	int started;
-	ssdpHubDiscoveryCallback callback;
+    int started;
+    ssdpHubDiscoveryCallback callback;
     YSOCKET request_sock[NB_OS_IFACES];
     YSOCKET notify_sock[NB_OS_IFACES];
     yThread thread;
-	SSDP_CACHE_ENTRY*   SSDPCache[NB_SSDP_CACHE_ENTRY];
+    SSDP_CACHE_ENTRY* SSDPCache[NB_SSDP_CACHE_ENTRY];
 } SSDPInfos;
 
-int 	ySSDPStart(SSDPInfos *SSDP, ssdpHubDiscoveryCallback callback, char *errmsg);
-int		ySSDPDiscover(SSDPInfos *SSDP, char *errmsg);
-void	ySSDPStop(SSDPInfos *SSDP);
+int ySSDPStart(SSDPInfos* SSDP, ssdpHubDiscoveryCallback callback, char* errmsg);
+int ySSDPDiscover(SSDPInfos* SSDP, char* errmsg);
+void ySSDPStop(SSDPInfos* SSDP);
 
 #ifdef  __cplusplus
 }

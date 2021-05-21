@@ -21,7 +21,7 @@ int main(int argc, const char * argv[])
   string      errmsg;
 
   // Setup the API to use local USB devices
-  if(YAPI::RegisterHub("usb", errmsg) != YAPI::SUCCESS) {
+  if(YAPI::RegisterHub("https://127.0.0.1:4443", errmsg) != YAPI::SUCCESS) {
     cerr << "RegisterHub error: " << errmsg << endl;
     return 1;
   }

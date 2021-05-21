@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ypkt_win.c 42304 2020-11-05 08:29:10Z seb $
+ * $Id: ypkt_win.c 44970 2021-05-10 10:36:22Z web $
  *
  * OS-specific USB packet layer, Windows version
  *
@@ -100,7 +100,6 @@ static void yWinPushEx(u32 line, yInterfaceSt *iface, pktQueue  *q, DWORD err)
 }
 
 #endif
-
 
 
 #define FIRST_OF        1
@@ -458,7 +457,8 @@ int yyyUSBGetInterfaces(yInterfaceSt** ifaces, int* nbifaceDetect, char* errmsg)
         HALLOG("Unable to unallocated Device Info Table  (%d)", GetLastError());
     }
     // save enumeration result to prevent later USB packets to redetect serial
-    if (yContext->prevEnum) yFree(yContext->prevEnum);
+    if (yContext->prevEnum)
+        yFree(yContext->prevEnum);
     yContext->prevEnumCnt = *nbifaceDetect;
     if (*nbifaceDetect > 0) {
         yContext->prevEnum = (yInterfaceSt*)yMalloc(*nbifaceDetect * sizeof(yInterfaceSt));

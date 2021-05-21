@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ypkt_osx.c 39355 2020-02-03 08:58:10Z seb $
+ * $Id: ypkt_osx.c 44970 2021-05-10 10:36:22Z web $
  *
  * OS-specific USB packet layer, Mac OS X version
  *
@@ -386,8 +386,6 @@ int yyyUSBGetInterfaces(yInterfaceSt **ifaces,int *nbifaceDetect,char *errmsg)
 /*****************************************************************
  * OSX implementation of yyypacket functions
  *****************************************************************/
-
-
 
 
 // return 1 if OS hdl are identical

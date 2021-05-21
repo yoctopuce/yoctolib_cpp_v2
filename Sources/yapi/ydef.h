@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef.h 44777 2021-04-30 09:02:57Z web $
+ * $Id: ydef.h 44909 2021-05-05 06:40:27Z web $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -458,7 +458,7 @@ typedef enum {
 
 // Yoctopuce arbitrary constants
 #define YOCTO_API_VERSION_STR       "2.0"
-#define YOCTO_API_VERSION_BCD       0x0110
+#define YOCTO_API_VERSION_BCD       0x0200
 #include "yversion.h"
 #define YOCTO_DEFAULT_PORT          4444
 #define YOCTO_DEFAULT_HTTPS_PORT    4443

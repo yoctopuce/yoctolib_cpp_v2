@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_colorledcluster.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_colorledcluster.cpp 44980 2021-05-10 11:24:42Z web $
  *
  *  Implements yFindColorLedCluster(), the high-level API for ColorLedCluster functions
  *
@@ -159,8 +159,8 @@ int YColorLedCluster::set_activeLedCount(int newval)
 /**
  * Returns the RGB LED type currently handled by the device.
  *
- * @return either YColorLedCluster::LEDTYPE_RGB or YColorLedCluster::LEDTYPE_RGBW, according to the RGB
- * LED type currently handled by the device
+ * @return a value among YColorLedCluster::LEDTYPE_RGB, YColorLedCluster::LEDTYPE_RGBW and
+ * YColorLedCluster::LEDTYPE_WS2811 corresponding to the RGB LED type currently handled by the device
  *
  * On failure, throws an exception or returns YColorLedCluster::LEDTYPE_INVALID.
  */
@@ -191,8 +191,8 @@ Y_LEDTYPE_enum YColorLedCluster::get_ledType(void)
  * Remember to call the matching module
  * saveToFlash() method to save the setting permanently.
  *
- * @param newval : either YColorLedCluster::LEDTYPE_RGB or YColorLedCluster::LEDTYPE_RGBW, according to
- * the RGB LED type currently handled by the device
+ * @param newval : a value among YColorLedCluster::LEDTYPE_RGB, YColorLedCluster::LEDTYPE_RGBW and
+ * YColorLedCluster::LEDTYPE_WS2811 corresponding to the RGB LED type currently handled by the device
  *
  * @return YAPI::SUCCESS if the call succeeds.
  *

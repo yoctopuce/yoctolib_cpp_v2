@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ymemory.h 44847 2021-05-03 09:04:43Z web $
+ * $Id: ymemory.h 44970 2021-05-10 10:36:22Z web $
  *
  * Basic memory check function to prevent memory leak
  *
@@ -91,23 +91,22 @@ void  ySafeMemoryStop(void);
 #endif
 #endif
 
-char *ystrdup_s(const char *src);
-YRETCODE ystrcpy_s(char *dst, unsigned dstsize, const char *src);
-YRETCODE ystrncpy_s(char *dst,unsigned dstsize,const char *src,unsigned len);
-YRETCODE ystrcat_s(char *dst, unsigned dstsize,const char *src);
-YRETCODE ystrncat_s(char *dst, unsigned dstsize,const char *src,unsigned len);
-int ysprintf_s(char *dst, unsigned dstsize,const char *fmt ,...);
-int yvsprintf_s (char *dst, unsigned dstsize, const char * fmt, va_list arg );
-int ymemfind(const u8 *haystack, u32 haystack_len, const u8 *needle, u32 needle_len);
-
+char* ystrdup_s(const char* src);
+YRETCODE ystrcpy_s(char* dst, unsigned dstsize, const char* src);
+YRETCODE ystrncpy_s(char* dst, unsigned dstsize, const char* src, unsigned len);
+YRETCODE ystrcat_s(char* dst, unsigned dstsize, const char* src);
+YRETCODE ystrncat_s(char* dst, unsigned dstsize, const char* src, unsigned len);
+int ysprintf_s(char* dst, unsigned dstsize, const char* fmt, ...);
+int yvsprintf_s(char* dst, unsigned dstsize, const char* fmt, va_list arg);
+int ymemfind(const u8* haystack, u32 haystack_len, const u8* needle, u32 needle_len);
 
 
 #if defined(WINDOWS_API) && defined(_MSC_VER) && !defined(WINCE)
-    #define YSTRCMP(A,B)                        strcmp(A,B)
-    #define YSTRNCMP(A,B,len)                   strncmp(A,B,len)
-    #define YSTRICMP(A,B)                       _stricmp(A,B)
-    #define YSTRNICMP(A,B,len)                  _strnicmp(A,B,len)
-    #define YSTRLEN(str)                        ((int)strlen(str))
+#define YSTRCMP(A,B)                        strcmp(A,B)
+#define YSTRNCMP(A,B,len)                   strncmp(A,B,len)
+#define YSTRICMP(A,B)                       _stricmp(A,B)
+#define YSTRNICMP(A,B,len)                  _strnicmp(A,B,len)
+#define YSTRLEN(str)                        ((int)strlen(str))
 #elif defined(WINDOWS_API) && defined(__BORLANDC__)
     #define YSTRCMP(A,B)                        strcmp(A,B)
     #define YSTRNCMP(A,B,len)                   strncmp(A,B,len)

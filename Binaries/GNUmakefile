@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-#  $Id: GNUmakefile 45160 2021-05-19 08:54:02Z web $
+#  $Id: GNUmakefile 45235 2021-05-22 22:29:30Z web $
 #
 #  GNU Makefile for linux and Mac OS X
 #
@@ -373,7 +373,6 @@ YOCTO_API_OBJS_STAT = yocto_api.o\
 	yocto_watchdog.o \
 	yocto_weighscale.o \
 	yocto_wireless.o \
-
 #-- yocto_patch_stop --
 
 
@@ -668,14 +667,14 @@ $(YAPI_DIR_WIN64)yapi-static.lib: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(YAPI_OBJS_
 
 $(DIR_WIN64)yocto.dll: $(OBJDIR_WIN64) $(ALL_OBJS_DYN_WIN64) $(OBJDIR_WIN64)winresource64.res $(ALL_H)
 	@echo building dll $@
-	@$(CPP_WIN64) $(ALL_OBJS_DYN_WIN64) $(OBJDIR_WIN64)winresource64.res /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
+	@$(CPP_WIN64) $(ALL_OBJS_DYN_WIN64) $(OBJDIR_WIN64)winresource64.res /nologo /Fe$@ /Fa(R) /link  /MACHINE:X64  /DLL  $(LINKWITH_WIN64)
 
 $(YAPI_DIR_WIN64)yapi.dll: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(YAPI_OBJS_DYN_WIN64) $(OBJDIR_WIN64)yapiresource64.res  $(ALL_H)
 	@echo building dll $@
 ifdef JAVA_HOME
 	@echo java_home set to $(JAVA_HOME)
 endif
-	@$(CC_WIN64) $(YAPI_OBJS_DYN_WIN64) $(OBJDIR_WIN64)yapiresource64.res /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link /DLL  $(LINKWITH_WIN64)
+	@$(CC_WIN64) $(YAPI_OBJS_DYN_WIN64) $(OBJDIR_WIN64)yapiresource64.res /W3 /WX- /O2 /Oi /Oy- /MT /Gy /GL /nologo /Fe$@ /Fa(R) /link  /MACHINE:X64  /DLL $(LINKWITH_WIN64)
 
 $(DIR_WIN64)test.exe: $(OBJDIR_WIN64) $(YAPI_DIR_WIN64) $(ALL_OBJS_STAT_WIN64) $(ALL_H) $(TEST_SRC)
 	@$(RM) -rf $@

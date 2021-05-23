@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.c 45011 2021-05-10 18:24:41Z web $
+ * $Id: yapi.c 45227 2021-05-21 09:12:44Z web $
  *
  * Implementation of public entry points to the low-level API
  *
@@ -2154,6 +2154,10 @@ static YRETCODE yapiInitAPI_internal(int detect_type, const char* certificate, c
     int res;
 #ifdef PERF_API_FUNCTIONS
     memset(&yApiPerf,0,sizeof(yApiPerf));
+#endif
+
+#ifdef _WIN64
+#pragma message("yapi is compiled in 64 bits")
 #endif
 
     if (yContext != NULL)

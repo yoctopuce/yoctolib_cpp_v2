@@ -1,4 +1,4 @@
-CPP2 v2.0.45204
+CPP2 v2.0.45235
 
 - Fix compilation of Windows 64 version of yapi.dll
 - Fix dll version information in .dll files

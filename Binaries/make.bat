@@ -1,9 +1,4 @@
 @ECHO OFF
-if "%VCINSTALLDIR%"=="" call "%VS150COMNTOOLS%vsvars32.bat"
-if "%VCINSTALLDIR%"=="" call "%VS140COMNTOOLS%vsvars32.bat"
-if "%VCINSTALLDIR%"=="" call "%VS100COMNTOOLS%vsvars32.bat"
-if "%VCINSTALLDIR%"=="" call "%VS110COMNTOOLS%vsvars32.bat"
-if "%VCINSTALLDIR%"=="" call "%VS120COMNTOOLS%vsvars32.bat"
 
 if "%~1"=="win64" (goto use_win64)
 if "%~1"=="release_win64" (goto use_win64)

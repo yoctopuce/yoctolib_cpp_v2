@@ -1,5 +1,3 @@
-CPP2 v2.0.45235
+CPP2 v2.0.45343
 
-- Fix compilation of Windows 64 version of yapi.dll
-- Fix dll version information in .dll files
-- Fix SSL/TLS certificate validation
+- Add Example for Yocto-MaxiKnob

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_lightsensor.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_lightsensor.cpp 45306 2021-05-26 08:04:16Z web $
  *
  *  Implements yFindLightSensor(), the high-level API for LightSensor functions
  *
@@ -204,7 +204,7 @@ int YLightSensor::set_measureType(Y_MEASURETYPE_enum newval)
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the light sensor, for instance
- *         LIGHTMK3.lightSensor.
+ *         LIGHTMK4.lightSensor.
  *
  * @return a YLightSensor object allowing you to drive the light sensor.
  */

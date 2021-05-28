@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_api.h 44120 2021-03-04 07:26:29Z seb $
+ * $Id: yocto_api.h 45306 2021-05-26 08:04:16Z web $
  *
  * High-level programming interface, common to all modules
  *
@@ -4293,7 +4293,7 @@ public:
      * call registerHub() at application initialization time.
      *
      * @param func : a string that uniquely characterizes the data logger, for instance
-     *         LIGHTMK3.dataLogger.
+     *         RX420MA1.dataLogger.
      *
      * @return a YDataLogger object allowing you to drive the data logger.
      */
@@ -4404,7 +4404,7 @@ public:
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the data logger, for instance
- *         LIGHTMK3.dataLogger.
+ *         RX420MA1.dataLogger.
  *
  * @return a YDataLogger object allowing you to drive the data logger.
  */

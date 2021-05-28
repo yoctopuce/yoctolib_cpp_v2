@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_files.h 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_files.h 45306 2021-05-26 08:04:16Z web $
  *
  * Declares yFindFiles(), the high-level API for Files functions
  *
@@ -127,7 +127,7 @@ public:
 //--- (generated code: YFiles declaration)
 /**
  * YFiles Class: filesystem control interface, available for instance in the Yocto-Color-V2, the
- * Yocto-Serial, the YoctoHub-Ethernet or the YoctoHub-Wireless-n
+ * Yocto-Serial, the YoctoHub-Ethernet or the YoctoHub-GSM-4G
  *
  * The YFiles class is used to access the filesystem embedded on
  * some Yoctopuce devices. This filesystem makes it

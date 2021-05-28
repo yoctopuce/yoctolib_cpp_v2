@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_lightsensor.h 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_lightsensor.h 45306 2021-05-26 08:04:16Z web $
  *
  *  Declares yFindLightSensor(), the high-level API for LightSensor functions
  *
@@ -77,7 +77,7 @@ typedef enum {
 
 //--- (YLightSensor declaration)
 /**
- * YLightSensor Class: light sensor control interface, available for instance in the Yocto-Light-V3,
+ * YLightSensor Class: light sensor control interface, available for instance in the Yocto-Light-V4,
  * the Yocto-Proximity or the Yocto-RangeFinder
  *
  * The YLightSensor class allows you to read and configure Yoctopuce light sensors.
@@ -200,7 +200,7 @@ public:
      * call registerHub() at application initialization time.
      *
      * @param func : a string that uniquely characterizes the light sensor, for instance
-     *         LIGHTMK3.lightSensor.
+     *         LIGHTMK4.lightSensor.
      *
      * @return a YLightSensor object allowing you to drive the light sensor.
      */
@@ -300,7 +300,7 @@ public:
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the light sensor, for instance
- *         LIGHTMK3.lightSensor.
+ *         LIGHTMK4.lightSensor.
  *
  * @return a YLightSensor object allowing you to drive the light sensor.
  */

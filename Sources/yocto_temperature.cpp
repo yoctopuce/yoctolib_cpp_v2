@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_temperature.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_temperature.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindTemperature(), the high-level API for Temperature functions
  *
@@ -83,7 +83,7 @@ int YTemperature::_parseAttr(YJSONObject *json_val)
         _sensorType =  (Y_SENSORTYPE_enum)json_val->getInt("sensorType");
     }
     if(json_val->has("signalValue")) {
-        _signalValue =  floor(json_val->getDouble("signalValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _signalValue =  floor(json_val->getDouble("signalValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("signalUnit")) {
         _signalUnit =  json_val->getString("signalUnit");
@@ -192,7 +192,7 @@ int YTemperature::set_sensorType(Y_SENSORTYPE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("sensorType", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

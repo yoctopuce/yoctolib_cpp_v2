@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_pwminput.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_pwminput.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindPwmInput(), the high-level API for PwmInput functions
  *
@@ -87,16 +87,16 @@ const double YPwmInput::PERIOD_INVALID = YAPI_INVALID_DOUBLE;
 int YPwmInput::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("dutyCycle")) {
-        _dutyCycle =  floor(json_val->getDouble("dutyCycle") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _dutyCycle =  floor(json_val->getDouble("dutyCycle") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("pulseDuration")) {
-        _pulseDuration =  floor(json_val->getDouble("pulseDuration") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _pulseDuration =  floor(json_val->getDouble("pulseDuration") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("frequency")) {
-        _frequency =  floor(json_val->getDouble("frequency") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _frequency =  floor(json_val->getDouble("frequency") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("period")) {
-        _period =  floor(json_val->getDouble("period") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _period =  floor(json_val->getDouble("period") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("pulseCounter")) {
         _pulseCounter =  json_val->getLong("pulseCounter");
@@ -303,7 +303,7 @@ int YPwmInput::set_pulseCounter(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("pulseCounter", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -404,7 +404,7 @@ int YPwmInput::set_pwmReportMode(Y_PWMREPORTMODE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("pwmReportMode", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -459,7 +459,7 @@ int YPwmInput::set_debouncePeriod(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("debouncePeriod", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -517,7 +517,7 @@ int YPwmInput::set_bandwidth(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("bandwidth", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

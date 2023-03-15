@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_api.h 45306 2021-05-26 08:04:16Z web $
+ * $Id: yocto_api.h 53388 2023-03-03 10:16:34Z seb $
  *
  * High-level programming interface, common to all modules
  *
@@ -87,6 +87,12 @@ namespace YOCTOLIB_NAMESPACE
 s64 yatoi(const char *c);
 int _ystrpos(const string& haystack, const string& needle);
 vector<string> _strsplit(const string& str, char delimiter);
+
+#ifdef WINDOWS_API
+#define SAFE_SPRINTF         sprintf_s
+#else
+#define SAFE_SPRINTF         snprintf
+#endif
 
 //--- (generated code: YFunction definitions)
 class YFunction; // forward declaration
@@ -317,10 +323,10 @@ typedef struct{
 }yapiDataEvent;
 
 typedef enum {
-    STRING,
-    NUMBER,
-    ARRAY,
-    OBJECT
+    YSTRING,
+    YNUMBER,
+    YARRAY,
+    YOBJECT
 } YJSONType;
 
 typedef enum {
@@ -482,6 +488,10 @@ protected:
 public:
     YAPIContext();
     ~YAPIContext();
+    static const u32 NO_TRUSTED_CA_CHECK = 1;
+    static const u32 NO_EXPIRATION_CHECK = 2;
+    static const u32 NO_HOSTNAME_CHECK = 4;
+
     //--- (generated code: YAPIContext accessors declaration)
 
 
@@ -519,6 +529,41 @@ public:
      * On failure, returns a string that starts with "error:".
      */
     virtual string      AddUdevRule(bool force);
+
+    /**
+     * Download the TLS/SSL certificate from the hub. This function allows to download a TLS/SSL certificate to add it
+     * to the list of trusted certificates using the AddTrustedCertificates method.
+     *
+     * @param url : the root URL of the VirtualHub V2 or HTTP server.
+     * @param mstimeout : the number of milliseconds available to download the certificate.
+     *
+     * @return a string containing the certificate. In case of error, returns a string starting with "error:".
+     */
+    virtual string      DownloadHostCertificate(string url,u64 mstimeout);
+
+    /**
+     * Adds a TLS/SSL certificate to the list of trusted certificates. By default, the library
+     * library will reject TLS/SSL connections to servers whose certificate is not known. This function
+     * function allows to add a list of known certificates. It is also possible to disable the verification
+     * using the SetNetworkSecurityOptions method.
+     *
+     * @param certificate : a string containing one or more certificates.
+     *
+     * @return an empty string if the certificate has been added correctly.
+     *         In case of error, returns a string starting with "error:".
+     */
+    virtual string      AddTrustedCertificates(string certificate);
+
+    /**
+     * Enables or disables certain TLS/SSSL certificate checks.
+     *
+     * @param options: The options: YAPIContext.ALL_CHECK, YAPIContext.NO_TRUSTED_CA_CHECK,
+     *         YAPIContext.NO_EXPIRATION_CHECK, YAPIContext.NO_HOSTNAME_CHECK.
+     *
+     * @return an empty string if the options are taken into account.
+     *         On error, returns a string beginning with "error:".
+     */
+    virtual string      SetNetworkSecurityOptions(int options);
 
     /**
      * Modifies the network connection delay for yRegisterHub() and yUpdateDeviceList().
@@ -638,6 +683,11 @@ public:
     static const u32 RESEND_MISSING_PKT = 4;
     static const u32 DETECT_ALL  = (Y_DETECT_USB | Y_DETECT_NET);
 
+    static const u32 NO_TRUSTED_CA_CHECK = YAPIContext::NO_TRUSTED_CA_CHECK;
+    static const u32 NO_EXPIRATION_CHECK = YAPIContext::NO_EXPIRATION_CHECK;
+    static const u32 NO_HOSTNAME_CHECK = YAPIContext::NO_HOSTNAME_CHECK;
+
+
 //--- (generated code: YFunction return codes)
     static const int SUCCESS               = 0;       // everything worked all right
     static const int NOT_INITIALIZED       = -1;      // call yInitAPI() first !
@@ -654,6 +704,8 @@ public:
     static const int UNAUTHORIZED          = -12;     // unauthorized access to password-protected device
     static const int RTC_NOT_READY         = -13;     // real-time clock has not been initialized (or time was lost)
     static const int FILE_NOT_FOUND        = -14;     // the file is not found
+    static const int SSL_ERROR             = -15;     // Error reported by mbedSSL
+    static const int BUFFER_TOO_SMALL      = -16;     // The buffer provided is too small
 //--- (end of generated code: YFunction return codes)
 
 
@@ -817,7 +869,8 @@ public:
      */
     static  YRETCODE    TestHub(const string& url, int mstimeout, string& errmsg);
     /**
-     * Setup the Yoctopuce library to use modules connected on a given machine. The
+     * Setup the Yoctopuce library to use modules connected on a given machine. Idealy this
+     * call will be made once at the begining of your application.  The
      * parameter will determine how the API will work. Use the following values:
      *
      * <b>usb</b>: When the usb keyword is used, the API will work with
@@ -827,9 +880,15 @@ public:
      *
      * <b><i>x.x.x.x</i></b> or <b><i>hostname</i></b>: The API will use the devices connected to the
      * host with the given IP address or hostname. That host can be a regular computer
-     * running a VirtualHub, or a networked YoctoHub such as YoctoHub-Ethernet or
+     * running a <i>native VirtualHub</i>, a <i>VirtualHub for web</i> hosted on a server,
+     * or a networked YoctoHub such as YoctoHub-Ethernet or
      * YoctoHub-Wireless. If you want to use the VirtualHub running on you local
-     * computer, use the IP address 127.0.0.1.
+     * computer, use the IP address 127.0.0.1. If the given IP is unresponsive, yRegisterHub
+     * will not return until a time-out defined by ySetNetworkTimeout has elapsed.
+     * However, it is possible to preventively test a connection  with yTestHub.
+     * If you cannot afford a network time-out, you can use the non blocking yPregisterHub
+     * function that will establish the connection as soon as it is available.
+     *
      *
      * <b>callback</b>: that keyword make the API run in "<i>HTTP Callback</i>" mode.
      * This a special mode allowing to take control of Yoctopuce devices
@@ -850,7 +909,9 @@ public:
      *
      * http://username:password@address:port
      *
-     * You can call <i>RegisterHub</i> several times to connect to several machines.
+     * You can call <i>RegisterHub</i> several times to connect to several machines. On
+     * the other hand, it is useless and even counterproductive to call <i>RegisterHub</i>
+     * with to same address multiple times during the life of the application.
      *
      * @param url : a string containing either "usb","callback" or the
      *         root URL of the hub to monitor
@@ -866,7 +927,8 @@ public:
      * Fault-tolerant alternative to yRegisterHub(). This function has the same
      * purpose and same arguments as yRegisterHub(), but does not trigger
      * an error when the selected hub is not available at the time of the function call.
-     * This makes it possible to register a network hub independently of the current
+     * If the connexion cannot be established immediately, a background task will automatically
+     * perform periodic retries. This makes it possible to register a network hub independently of the current
      * connectivity, and to try to contact it only when a device is actively needed.
      *
      * @param url : a string containing either "usb","callback" or the
@@ -1008,6 +1070,47 @@ public:
         return YAPI::_yapiContext.AddUdevRule(force);
     }
     /**
+     * Download the TLS/SSL certificate from the hub. This function allows to download a TLS/SSL certificate to add it
+     * to the list of trusted certificates using the AddTrustedCertificates method.
+     *
+     * @param url : the root URL of the VirtualHub V2 or HTTP server.
+     * @param mstimeout : the number of milliseconds available to download the certificate.
+     *
+     * @return a string containing the certificate. In case of error, returns a string starting with "error:".
+     */
+    inline static string DownloadHostCertificate(string url,u64 mstimeout)
+    {
+        return YAPI::_yapiContext.DownloadHostCertificate(url, mstimeout);
+    }
+    /**
+     * Adds a TLS/SSL certificate to the list of trusted certificates. By default, the library
+     * library will reject TLS/SSL connections to servers whose certificate is not known. This function
+     * function allows to add a list of known certificates. It is also possible to disable the verification
+     * using the SetNetworkSecurityOptions method.
+     *
+     * @param certificate : a string containing one or more certificates.
+     *
+     * @return an empty string if the certificate has been added correctly.
+     *         In case of error, returns a string starting with "error:".
+     */
+    inline static string AddTrustedCertificates(string certificate)
+    {
+        return YAPI::_yapiContext.AddTrustedCertificates(certificate);
+    }
+    /**
+     * Enables or disables certain TLS/SSSL certificate checks.
+     *
+     * @param options: The options: YAPIContext.ALL_CHECK, YAPIContext.NO_TRUSTED_CA_CHECK,
+     *         YAPIContext.NO_EXPIRATION_CHECK, YAPIContext.NO_HOSTNAME_CHECK.
+     *
+     * @return an empty string if the options are taken into account.
+     *         On error, returns a string beginning with "error:".
+     */
+    inline static string SetNetworkSecurityOptions(int options)
+    {
+        return YAPI::_yapiContext.SetNetworkSecurityOptions(options);
+    }
+    /**
      * Modifies the network connection delay for yRegisterHub() and yUpdateDeviceList().
      * This delay impacts only the YoctoHubs and VirtualHub
      * which are accessible through the network. By default, this delay is of 20000 milliseconds,
@@ -1128,9 +1231,7 @@ public:
     virtual int         _processMore(int newupdate);
 
     /**
-     * Returns a list of all the modules in "firmware update" mode. Only devices
-     * connected over USB are listed. For devices connected to a YoctoHub, you
-     * must connect yourself to the YoctoHub web interface.
+     * Returns a list of all the modules in "firmware update" mode.
      *
      * @return an array of strings containing the serial numbers of devices in "firmware update" mode.
      */
@@ -1234,6 +1335,7 @@ protected:
     vector<double>  _calraw;
     vector<double>  _calref;
     vector< vector<double> > _values;
+    bool            _isLoaded;
     //--- (end of generated code: YDataStream attributes)
 
     yCalibrationHandler _calhdl;
@@ -1254,7 +1356,13 @@ public:
 
     virtual int         _parseStream(string sdata);
 
+    virtual bool        _wasLoaded(void);
+
     virtual string      _get_url(void);
+
+    virtual string      _get_baseurl(void);
+
+    virtual string      _get_urlsuffix(void);
 
     virtual int         loadStream(void);
 
@@ -1576,6 +1684,7 @@ protected:
     string          _hardwareId;
     string          _functionId;
     string          _unit;
+    int             _bulkLoad;
     double          _startTimeMs;
     double          _endTimeMs;
     int             _progress;
@@ -1689,7 +1798,7 @@ public:
     virtual int         get_progress(void);
 
     /**
-     * Loads the the next block of measures from the dataLogger, and updates
+     * Loads the next block of measures from the dataLogger, and updates
      * the progress indicator.
      *
      * @return an integer in the range 0 to 100 (percentage of completion),
@@ -2981,6 +3090,17 @@ public:
     virtual int         set_allSettings(string settings);
 
     /**
+     * Adds a file to the uploaded data at the next HTTP callback.
+     * This function only affects the next HTTP callback and only works in
+     * HTTP callback mode.
+     *
+     * @param filename : the name of the file to upload at the next HTTP callback
+     *
+     * @return nothing.
+     */
+    virtual int         addFileToHTTPCallback(string filename);
+
+    /**
      * Returns the unique hardware identifier of the module.
      * The unique hardware identifier is made of the device serial
      * number followed by string ".module".
@@ -3834,7 +3954,8 @@ inline void yRegisterCalibrationHandler(int calibrationType, yCalibrationHandler
 { YAPI::RegisterCalibrationHandler(calibrationType, calibrationHandler); }
 
 /**
- * Setup the Yoctopuce library to use modules connected on a given machine. The
+ * Setup the Yoctopuce library to use modules connected on a given machine. Idealy this
+ * call will be made once at the begining of your application.  The
  * parameter will determine how the API will work. Use the following values:
  *
  * <b>usb</b>: When the usb keyword is used, the API will work with
@@ -3844,9 +3965,15 @@ inline void yRegisterCalibrationHandler(int calibrationType, yCalibrationHandler
  *
  * <b><i>x.x.x.x</i></b> or <b><i>hostname</i></b>: The API will use the devices connected to the
  * host with the given IP address or hostname. That host can be a regular computer
- * running a VirtualHub, or a networked YoctoHub such as YoctoHub-Ethernet or
+ * running a <i>native VirtualHub</i>, a <i>VirtualHub for web</i> hosted on a server,
+ * or a networked YoctoHub such as YoctoHub-Ethernet or
  * YoctoHub-Wireless. If you want to use the VirtualHub running on you local
- * computer, use the IP address 127.0.0.1.
+ * computer, use the IP address 127.0.0.1. If the given IP is unresponsive, yRegisterHub
+ * will not return until a time-out defined by ySetNetworkTimeout has elapsed.
+ * However, it is possible to preventively test a connection  with yTestHub.
+ * If you cannot afford a network time-out, you can use the non blocking yPregisterHub
+ * function that will establish the connection as soon as it is available.
+ *
  *
  * <b>callback</b>: that keyword make the API run in "<i>HTTP Callback</i>" mode.
  * This a special mode allowing to take control of Yoctopuce devices
@@ -3867,7 +3994,9 @@ inline void yRegisterCalibrationHandler(int calibrationType, yCalibrationHandler
  *
  * http://username:password@address:port
  *
- * You can call <i>RegisterHub</i> several times to connect to several machines.
+ * You can call <i>RegisterHub</i> several times to connect to several machines. On
+ * the other hand, it is useless and even counterproductive to call <i>RegisterHub</i>
+ * with to same address multiple times during the life of the application.
  *
  * @param url : a string containing either "usb","callback" or the
  *         root URL of the hub to monitor
@@ -3884,7 +4013,8 @@ inline YRETCODE yRegisterHub(const string& url, string& errmsg)
  * Fault-tolerant alternative to yRegisterHub(). This function has the same
  * purpose and same arguments as yRegisterHub(), but does not trigger
  * an error when the selected hub is not available at the time of the function call.
- * This makes it possible to register a network hub independently of the current
+ * If the connexion cannot be established immediately, a background task will automatically
+ * perform periodic retries. This makes it possible to register a network hub independently of the current
  * connectivity, and to try to contact it only when a device is actively needed.
  *
  * @param url : a string containing either "usb","callback" or the
@@ -4293,7 +4423,7 @@ public:
      * call registerHub() at application initialization time.
      *
      * @param func : a string that uniquely characterizes the data logger, for instance
-     *         RX420MA1.dataLogger.
+     *         LIGHTMK4.dataLogger.
      *
      * @return a YDataLogger object allowing you to drive the data logger.
      */
@@ -4404,7 +4534,7 @@ public:
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the data logger, for instance
- *         RX420MA1.dataLogger.
+ *         LIGHTMK4.dataLogger.
  *
  * @return a YDataLogger object allowing you to drive the data logger.
  */

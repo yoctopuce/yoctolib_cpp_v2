@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_network.h 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_network.h 53431 2023-03-06 14:19:35Z seb $
  *
  *  Declares yFindNetwork(), the high-level API for Network functions
  *
@@ -106,10 +106,19 @@ typedef enum {
     Y_CALLBACKENCODING_INVALID = -1,
 } Y_CALLBACKENCODING_enum;
 #endif
+#ifndef _Y_CALLBACKTEMPLATE_ENUM
+#define _Y_CALLBACKTEMPLATE_ENUM
+typedef enum {
+    Y_CALLBACKTEMPLATE_OFF = 0,
+    Y_CALLBACKTEMPLATE_ON = 1,
+    Y_CALLBACKTEMPLATE_INVALID = -1,
+} Y_CALLBACKTEMPLATE_enum;
+#endif
 #define Y_MACADDRESS_INVALID            (YAPI_INVALID_STRING)
 #define Y_IPADDRESS_INVALID             (YAPI_INVALID_STRING)
 #define Y_SUBNETMASK_INVALID            (YAPI_INVALID_STRING)
 #define Y_ROUTER_INVALID                (YAPI_INVALID_STRING)
+#define Y_CURRENTDNS_INVALID            (YAPI_INVALID_STRING)
 #define Y_IPCONFIG_INVALID              (YAPI_INVALID_STRING)
 #define Y_PRIMARYDNS_INVALID            (YAPI_INVALID_STRING)
 #define Y_SECONDARYDNS_INVALID          (YAPI_INVALID_STRING)
@@ -117,6 +126,7 @@ typedef enum {
 #define Y_USERPASSWORD_INVALID          (YAPI_INVALID_STRING)
 #define Y_ADMINPASSWORD_INVALID         (YAPI_INVALID_STRING)
 #define Y_HTTPPORT_INVALID              (YAPI_INVALID_UINT)
+#define Y_HTTPSPORT_INVALID             (YAPI_INVALID_UINT)
 #define Y_DEFAULTPAGE_INVALID           (YAPI_INVALID_STRING)
 #define Y_WWWWATCHDOGDELAY_INVALID      (YAPI_INVALID_UINT)
 #define Y_CALLBACKURL_INVALID           (YAPI_INVALID_STRING)
@@ -131,7 +141,7 @@ typedef enum {
 //--- (YNetwork declaration)
 /**
  * YNetwork Class: network interface control interface, available for instance in the
- * YoctoHub-Ethernet, the YoctoHub-GSM-3G-NA, the YoctoHub-GSM-4G or the YoctoHub-Wireless-n
+ * YoctoHub-Ethernet, the YoctoHub-GSM-4G, the YoctoHub-Wireless-SR or the YoctoHub-Wireless-n
  *
  * YNetwork objects provide access to TCP/IP parameters of Yoctopuce
  * devices that include a built-in network interface.
@@ -149,6 +159,7 @@ protected:
     string          _ipAddress;
     string          _subnetMask;
     string          _router;
+    string          _currentDNS;
     string          _ipConfig;
     string          _primaryDNS;
     string          _secondaryDNS;
@@ -156,12 +167,14 @@ protected:
     string          _userPassword;
     string          _adminPassword;
     int             _httpPort;
+    int             _httpsPort;
     string          _defaultPage;
     Y_DISCOVERABLE_enum _discoverable;
     int             _wwwWatchdogDelay;
     string          _callbackUrl;
     Y_CALLBACKMETHOD_enum _callbackMethod;
     Y_CALLBACKENCODING_enum _callbackEncoding;
+    Y_CALLBACKTEMPLATE_enum _callbackTemplate;
     string          _callbackCredentials;
     int             _callbackInitialDelay;
     string          _callbackSchedule;
@@ -194,6 +207,7 @@ public:
     static const string IPADDRESS_INVALID;
     static const string SUBNETMASK_INVALID;
     static const string ROUTER_INVALID;
+    static const string CURRENTDNS_INVALID;
     static const string IPCONFIG_INVALID;
     static const string PRIMARYDNS_INVALID;
     static const string SECONDARYDNS_INVALID;
@@ -201,6 +215,7 @@ public:
     static const string USERPASSWORD_INVALID;
     static const string ADMINPASSWORD_INVALID;
     static const int HTTPPORT_INVALID = YAPI_INVALID_UINT;
+    static const int HTTPSPORT_INVALID = YAPI_INVALID_UINT;
     static const string DEFAULTPAGE_INVALID;
     static const Y_DISCOVERABLE_enum DISCOVERABLE_FALSE = Y_DISCOVERABLE_FALSE;
     static const Y_DISCOVERABLE_enum DISCOVERABLE_TRUE = Y_DISCOVERABLE_TRUE;
@@ -225,6 +240,9 @@ public:
     static const Y_CALLBACKENCODING_enum CALLBACKENCODING_PRTG = Y_CALLBACKENCODING_PRTG;
     static const Y_CALLBACKENCODING_enum CALLBACKENCODING_INFLUXDB_V2 = Y_CALLBACKENCODING_INFLUXDB_V2;
     static const Y_CALLBACKENCODING_enum CALLBACKENCODING_INVALID = Y_CALLBACKENCODING_INVALID;
+    static const Y_CALLBACKTEMPLATE_enum CALLBACKTEMPLATE_OFF = Y_CALLBACKTEMPLATE_OFF;
+    static const Y_CALLBACKTEMPLATE_enum CALLBACKTEMPLATE_ON = Y_CALLBACKTEMPLATE_ON;
+    static const Y_CALLBACKTEMPLATE_enum CALLBACKTEMPLATE_INVALID = Y_CALLBACKTEMPLATE_INVALID;
     static const string CALLBACKCREDENTIALS_INVALID;
     static const int CALLBACKINITIALDELAY_INVALID = YAPI_INVALID_UINT;
     static const string CALLBACKSCHEDULE_INVALID;
@@ -308,6 +326,18 @@ public:
 
     inline string       router(void)
     { return this->get_router(); }
+
+    /**
+     * Returns the IP address of the DNS server currently used by the device.
+     *
+     * @return a string corresponding to the IP address of the DNS server currently used by the device
+     *
+     * On failure, throws an exception or returns YNetwork::CURRENTDNS_INVALID.
+     */
+    string              get_currentDNS(void);
+
+    inline string       currentDNS(void)
+    { return this->get_currentDNS(); }
 
     /**
      * Returns the IP configuration of the network interface.
@@ -510,6 +540,33 @@ public:
     { return this->set_httpPort(newval); }
 
     /**
+     * Returns the secure TCP port used to serve the hub web UI.
+     *
+     * @return an integer corresponding to the secure TCP port used to serve the hub web UI
+     *
+     * On failure, throws an exception or returns YNetwork::HTTPSPORT_INVALID.
+     */
+    int                 get_httpsPort(void);
+
+    inline int          httpsPort(void)
+    { return this->get_httpsPort(); }
+
+    /**
+     * Changes the secure TCP port used to serve the hub web UI. The default value is port 4443,
+     * which is the default for all Web servers. When you change this parameter, remember to call the saveToFlash()
+     * method of the module if the modification must be kept.
+     *
+     * @param newval : an integer corresponding to the secure TCP port used to serve the hub web UI
+     *
+     * @return YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    int             set_httpsPort(int newval);
+    inline int      setHttpsPort(int newval)
+    { return this->set_httpsPort(newval); }
+
+    /**
      * Returns the HTML page to serve for the URL "/"" of the hub.
      *
      * @return a string corresponding to the HTML page to serve for the URL "/"" of the hub
@@ -703,6 +760,39 @@ public:
     int             set_callbackEncoding(Y_CALLBACKENCODING_enum newval);
     inline int      setCallbackEncoding(Y_CALLBACKENCODING_enum newval)
     { return this->set_callbackEncoding(newval); }
+
+    /**
+     * Returns the activation state of the custom template file to customize callback
+     * format. If the custom callback template is disabled, it will be ignored even
+     * if present on the YoctoHub.
+     *
+     * @return either YNetwork::CALLBACKTEMPLATE_OFF or YNetwork::CALLBACKTEMPLATE_ON, according to the
+     * activation state of the custom template file to customize callback
+     *         format
+     *
+     * On failure, throws an exception or returns YNetwork::CALLBACKTEMPLATE_INVALID.
+     */
+    Y_CALLBACKTEMPLATE_enum get_callbackTemplate(void);
+
+    inline Y_CALLBACKTEMPLATE_enum callbackTemplate(void)
+    { return this->get_callbackTemplate(); }
+
+    /**
+     * Enable the use of a template file to customize callbacks format.
+     * When the custom callback template file is enabled, the template file
+     * will be loaded for each callback in order to build the data to post to the
+     * server. If template file does not exist on the YoctoHub, the callback will
+     * fail with an error message indicating the name of the expected template file.
+     *
+     * @param newval : either YNetwork::CALLBACKTEMPLATE_OFF or YNetwork::CALLBACKTEMPLATE_ON
+     *
+     * @return YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    int             set_callbackTemplate(Y_CALLBACKTEMPLATE_enum newval);
+    inline int      setCallbackTemplate(Y_CALLBACKTEMPLATE_enum newval)
+    { return this->set_callbackTemplate(newval); }
 
     /**
      * Returns a hashed version of the notification callback credentials if set,

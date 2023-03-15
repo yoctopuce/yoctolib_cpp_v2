@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_genericsensor.h 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_genericsensor.h 52175 2022-12-06 07:37:12Z seb $
  *
  *  Declares yFindGenericSensor(), the high-level API for GenericSensor functions
  *
@@ -69,6 +69,7 @@ typedef enum {
     Y_SIGNALSAMPLING_LOW_NOISE = 2,
     Y_SIGNALSAMPLING_LOW_NOISE_FILTERED = 3,
     Y_SIGNALSAMPLING_HIGHEST_RATE = 4,
+    Y_SIGNALSAMPLING_AC = 5,
     Y_SIGNALSAMPLING_INVALID = -1,
 } Y_SIGNALSAMPLING_enum;
 #endif
@@ -90,7 +91,7 @@ typedef enum {
 //--- (YGenericSensor declaration)
 /**
  * YGenericSensor Class: GenericSensor control interface, available for instance in the
- * Yocto-0-10V-Rx, the Yocto-4-20mA-Rx, the Yocto-Serial or the Yocto-milliVolt-Rx
+ * Yocto-0-10V-Rx, the Yocto-4-20mA-Rx, the Yocto-Bridge or the Yocto-milliVolt-Rx
  *
  * The YGenericSensor class allows you to read and configure Yoctopuce signal
  * transducers. It inherits from YSensor class the core functions to read measurements,
@@ -140,6 +141,7 @@ public:
     static const Y_SIGNALSAMPLING_enum SIGNALSAMPLING_LOW_NOISE = Y_SIGNALSAMPLING_LOW_NOISE;
     static const Y_SIGNALSAMPLING_enum SIGNALSAMPLING_LOW_NOISE_FILTERED = Y_SIGNALSAMPLING_LOW_NOISE_FILTERED;
     static const Y_SIGNALSAMPLING_enum SIGNALSAMPLING_HIGHEST_RATE = Y_SIGNALSAMPLING_HIGHEST_RATE;
+    static const Y_SIGNALSAMPLING_enum SIGNALSAMPLING_AC = Y_SIGNALSAMPLING_AC;
     static const Y_SIGNALSAMPLING_enum SIGNALSAMPLING_INVALID = Y_SIGNALSAMPLING_INVALID;
     static const Y_ENABLED_enum ENABLED_FALSE = Y_ENABLED_FALSE;
     static const Y_ENABLED_enum ENABLED_TRUE = Y_ENABLED_TRUE;
@@ -295,8 +297,8 @@ public:
      *
      * @return a value among YGenericSensor::SIGNALSAMPLING_HIGH_RATE,
      * YGenericSensor::SIGNALSAMPLING_HIGH_RATE_FILTERED, YGenericSensor::SIGNALSAMPLING_LOW_NOISE,
-     * YGenericSensor::SIGNALSAMPLING_LOW_NOISE_FILTERED and YGenericSensor::SIGNALSAMPLING_HIGHEST_RATE
-     * corresponding to the electric signal sampling method to use
+     * YGenericSensor::SIGNALSAMPLING_LOW_NOISE_FILTERED, YGenericSensor::SIGNALSAMPLING_HIGHEST_RATE and
+     * YGenericSensor::SIGNALSAMPLING_AC corresponding to the electric signal sampling method to use
      *
      * On failure, throws an exception or returns YGenericSensor::SIGNALSAMPLING_INVALID.
      */
@@ -317,8 +319,8 @@ public:
      *
      * @param newval : a value among YGenericSensor::SIGNALSAMPLING_HIGH_RATE,
      * YGenericSensor::SIGNALSAMPLING_HIGH_RATE_FILTERED, YGenericSensor::SIGNALSAMPLING_LOW_NOISE,
-     * YGenericSensor::SIGNALSAMPLING_LOW_NOISE_FILTERED and YGenericSensor::SIGNALSAMPLING_HIGHEST_RATE
-     * corresponding to the electric signal sampling method to use
+     * YGenericSensor::SIGNALSAMPLING_LOW_NOISE_FILTERED, YGenericSensor::SIGNALSAMPLING_HIGHEST_RATE and
+     * YGenericSensor::SIGNALSAMPLING_AC corresponding to the electric signal sampling method to use
      *
      * @return YAPI::SUCCESS if the call succeeds.
      *

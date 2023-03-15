@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_humidity.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_humidity.cpp 50729 2022-08-19 06:47:38Z seb $
  *
  *  Implements yFindHumidity(), the high-level API for Humidity functions
  *
@@ -77,10 +77,10 @@ const double YHumidity::ABSHUM_INVALID = YAPI_INVALID_DOUBLE;
 int YHumidity::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("relHum")) {
-        _relHum =  floor(json_val->getDouble("relHum") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _relHum =  floor(json_val->getDouble("relHum") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("absHum")) {
-        _absHum =  floor(json_val->getDouble("absHum") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _absHum =  floor(json_val->getDouble("absHum") / 65.536 + 0.5) / 1000.0;
     }
     return YSensor::_parseAttr(json_val);
 }

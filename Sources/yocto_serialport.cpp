@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_serialport.cpp 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_serialport.cpp 53034 2023-02-02 10:16:55Z seb $
  *
  * Implements yFindSerialPort(), the high-level API for SerialPort functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_serialport.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "serialport"
@@ -145,6 +146,8 @@ YSerialPort::YSerialPort(const string& func): YFunction(func)
     ,_valueCallbackSerialPort(NULL)
     ,_rxptr(0)
     ,_rxbuffptr(0)
+    ,_eventPos(0)
+    ,_eventCallback(NULL)
 //--- (end of generated code: YSerialPort initialization)
 {
     _className="SerialPort";
@@ -156,6 +159,11 @@ YSerialPort::~YSerialPort()
 //--- (end of generated code: YSerialPort cleanup)
 }
 //--- (generated code: YSerialPort implementation)
+void YSerialPort::yInternalEventCallback(YSerialPort *obj, const string& value)
+{
+    obj->_internalEventHandler(value);
+}
+
 // static attributes
 const string YSerialPort::LASTMSG_INVALID = YAPI_INVALID_STRING;
 const string YSerialPort::CURRENTJOB_INVALID = YAPI_INVALID_STRING;
@@ -674,8 +682,8 @@ int YSerialPort::set_protocol(const string& newval)
  *
  * @return a value among YSerialPort::VOLTAGELEVEL_OFF, YSerialPort::VOLTAGELEVEL_TTL3V,
  * YSerialPort::VOLTAGELEVEL_TTL3VR, YSerialPort::VOLTAGELEVEL_TTL5V, YSerialPort::VOLTAGELEVEL_TTL5VR,
- * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485 and YSerialPort::VOLTAGELEVEL_TTL1V8
- * corresponding to the voltage level used on the serial line
+ * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485, YSerialPort::VOLTAGELEVEL_TTL1V8 and
+ * YSerialPort::VOLTAGELEVEL_SDI12 corresponding to the voltage level used on the serial line
  *
  * On failure, throws an exception or returns YSerialPort::VOLTAGELEVEL_INVALID.
  */
@@ -712,8 +720,8 @@ Y_VOLTAGELEVEL_enum YSerialPort::get_voltageLevel(void)
  *
  * @param newval : a value among YSerialPort::VOLTAGELEVEL_OFF, YSerialPort::VOLTAGELEVEL_TTL3V,
  * YSerialPort::VOLTAGELEVEL_TTL3VR, YSerialPort::VOLTAGELEVEL_TTL5V, YSerialPort::VOLTAGELEVEL_TTL5VR,
- * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485 and YSerialPort::VOLTAGELEVEL_TTL1V8
- * corresponding to the voltage type used on the serial line
+ * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485, YSerialPort::VOLTAGELEVEL_TTL1V8 and
+ * YSerialPort::VOLTAGELEVEL_SDI12 corresponding to the voltage type used on the serial line
  *
  * @return YAPI::SUCCESS if the call succeeds.
  *
@@ -725,7 +733,7 @@ int YSerialPort::set_voltageLevel(Y_VOLTAGELEVEL_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("voltageLevel", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1016,16 +1024,29 @@ int YSerialPort::read_tell(void)
  */
 int YSerialPort::read_avail(void)
 {
-    string buff;
-    int bufflen = 0;
+    string availPosStr;
+    int atPos = 0;
     int res = 0;
+    string databin;
 
-    buff = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
-    bufflen = (int)(buff).size() - 1;
-    while ((bufflen > 0) && (((u8)buff[bufflen]) != 64)) {
-        bufflen = bufflen - 1;
-    }
-    res = atoi(((buff).substr( 0, bufflen)).c_str());
+    databin = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
+    availPosStr = databin;
+    atPos = _ystrpos(availPosStr, "@");
+    res = atoi(((availPosStr).substr( 0, atPos)).c_str());
+    return res;
+}
+
+int YSerialPort::end_tell(void)
+{
+    string availPosStr;
+    int atPos = 0;
+    int res = 0;
+    string databin;
+
+    databin = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
+    availPosStr = databin;
+    atPos = _ystrpos(availPosStr, "@");
+    res = atoi(((availPosStr).substr( atPos+1, (int)(availPosStr).length()-atPos-1)).c_str());
     return res;
 }
 
@@ -1043,13 +1064,22 @@ int YSerialPort::read_avail(void)
  */
 string YSerialPort::queryLine(string query,int maxWait)
 {
+    int prevpos = 0;
     string url;
     string msgbin;
     vector<string> msgarr;
     int msglen = 0;
     string res;
+    if ((int)(query).length() <= 80) {
+        // fast query
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=!%s", maxWait,this->_escapeAttr(query).c_str());
+    } else {
+        // long query
+        prevpos = this->end_tell();
+        this->_upload("txdata", query + "\r\n");
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&pos=%d", maxWait,prevpos);
+    }
 
-    url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=!%s", maxWait,this->_escapeAttr(query).c_str());
     msgbin = this->_download(url);
     msgarr = this->_json_get_array(msgbin);
     msglen = (int)msgarr.size();
@@ -1081,13 +1111,22 @@ string YSerialPort::queryLine(string query,int maxWait)
  */
 string YSerialPort::queryHex(string hexString,int maxWait)
 {
+    int prevpos = 0;
     string url;
     string msgbin;
     vector<string> msgarr;
     int msglen = 0;
     string res;
+    if ((int)(hexString).length() <= 80) {
+        // fast query
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=$%s", maxWait,hexString.c_str());
+    } else {
+        // long query
+        prevpos = this->end_tell();
+        this->_upload("txdata", YAPI::_hexStr2Bin(hexString));
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&pos=%d", maxWait,prevpos);
+    }
 
-    url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=$%s", maxWait,hexString.c_str());
     msgbin = this->_download(url);
     msgarr = this->_json_get_array(msgbin);
     msglen = (int)msgarr.size();
@@ -1146,6 +1185,7 @@ int YSerialPort::selectJob(string jobfile)
  */
 int YSerialPort::reset(void)
 {
+    _eventPos = 0;
     _rxptr = 0;
     _rxbuffptr = 0;
     _rxbuff = string(0, (char)0);
@@ -1555,6 +1595,23 @@ string YSerialPort::readHex(int nBytes)
 }
 
 /**
+ * Emits a BREAK condition on the serial interface. When the specified
+ * duration is 0, the BREAK signal will be exactly one character wide.
+ * When the duration is between 1 and 100, the BREAK condition will
+ * be hold for the specified number of milliseconds.
+ *
+ * @param duration : 0 for a standard BREAK, or duration between 1 and 100 ms
+ *
+ * @return YAPI::SUCCESS if the call succeeds.
+ *
+ * On failure, throws an exception or returns a negative error code.
+ */
+int YSerialPort::sendBreak(int duration)
+{
+    return this->sendCommand(YapiWrapper::ysprintf("B%d",duration));
+}
+
+/**
  * Manually sets the state of the RTS line. This function has no effect when
  * hardware handshake is enabled, as the RTS line is driven automatically.
  *
@@ -1635,6 +1692,68 @@ vector<YSnoopingRecord> YSerialPort::snoopMessages(int maxWait)
 }
 
 /**
+ * Registers a callback function to be called each time that a message is sent or
+ * received by the serial port. The callback is invoked only during the execution of
+ * ySleep or yHandleEvents. This provides control over the time when
+ * the callback is triggered. For good responsiveness, remember to call one of these
+ * two functions periodically. To unregister a callback, pass a NULL pointer as argument.
+ *
+ * @param callback : the callback function to call, or a NULL pointer.
+ *         The callback function should take four arguments:
+ *         the YSerialPort object that emitted the event, and
+ *         the YSnoopingRecord object that describes the message
+ *         sent or received.
+ *         On failure, throws an exception or returns a negative error code.
+ */
+int YSerialPort::registerSnoopingCallback(YSnoopingCallback callback)
+{
+    if (callback != NULL) {
+        this->registerValueCallback(yInternalEventCallback);
+    } else {
+        this->registerValueCallback((YSerialPortValueCallback) NULL);
+    }
+    // register user callback AFTER the internal pseudo-event,
+    // to make sure we start with future events only
+    _eventCallback = callback;
+    return 0;
+}
+
+int YSerialPort::_internalEventHandler(string advstr)
+{
+    string url;
+    string msgbin;
+    vector<string> msgarr;
+    int msglen = 0;
+    int idx = 0;
+    if (!(_eventCallback != NULL)) {
+        // first simulated event, use it only to initialize reference values
+        _eventPos = 0;
+    }
+
+    url = YapiWrapper::ysprintf("rxmsg.json?pos=%d&maxw=0&t=0",_eventPos);
+    msgbin = this->_download(url);
+    msgarr = this->_json_get_array(msgbin);
+    msglen = (int)msgarr.size();
+    if (msglen == 0) {
+        return YAPI_SUCCESS;
+    }
+    // last element of array is the new position
+    msglen = msglen - 1;
+    if (!(_eventCallback != NULL)) {
+        // first simulated event, use it only to initialize reference values
+        _eventPos = atoi((msgarr[msglen]).c_str());
+        return YAPI_SUCCESS;
+    }
+    _eventPos = atoi((msgarr[msglen]).c_str());
+    idx = 0;
+    while (idx < msglen) {
+        _eventCallback(this, YSnoopingRecord(msgarr[idx]));
+        idx = idx + 1;
+    }
+    return YAPI_SUCCESS;
+}
+
+/**
  * Sends an ASCII string to the serial port, preceeded with an STX code and
  * followed by an ETX code.
  *
@@ -1686,6 +1805,7 @@ vector<int> YSerialPort::queryMODBUS(int slaveNo,vector<int> pduBytes)
     int nib = 0;
     int i = 0;
     string cmd;
+    int prevpos = 0;
     string url;
     string pat;
     string msgs;
@@ -1703,8 +1823,16 @@ vector<int> YSerialPort::queryMODBUS(int slaveNo,vector<int> pduBytes)
         cmd = YapiWrapper::ysprintf("%s%02X", cmd.c_str(),((pduBytes[i]) & (0xff)));
         i = i + 1;
     }
+    if ((int)(cmd).length() <= 80) {
+        // fast query
+        url = YapiWrapper::ysprintf("rxmsg.json?cmd=:%s&pat=:%s", cmd.c_str(),pat.c_str());
+    } else {
+        // long query
+        prevpos = this->end_tell();
+        this->_upload("txdata:", YAPI::_hexStr2Bin(cmd));
+        url = YapiWrapper::ysprintf("rxmsg.json?pos=%d&maxw=2000&pat=:%s", prevpos,pat.c_str());
+    }
 
-    url = YapiWrapper::ysprintf("rxmsg.json?cmd=:%s&pat=:%s", cmd.c_str(),pat.c_str());
     msgs = this->_download(url);
     reps = this->_json_get_array(msgs);
     if (!((int)reps.size() > 1)) {
@@ -1875,6 +2003,10 @@ vector<int> YSerialPort::modbusReadRegisters(int slaveNo,int pduAddr,int nWords)
     int regpos = 0;
     int idx = 0;
     int val = 0;
+    if (!(nWords<=256)) {
+        _throw(YAPI_INVALID_ARGUMENT,"Cannot read more than 256 words");
+        return res;
+    }
     pdu.push_back(0x03);
     pdu.push_back(((pduAddr) >> (8)));
     pdu.push_back(((pduAddr) & (0xff)));

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_weighscale.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_weighscale.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindWeighScale(), the high-level API for WeighScale functions
  *
@@ -91,22 +91,22 @@ int YWeighScale::_parseAttr(YJSONObject *json_val)
         _excitation =  (Y_EXCITATION_enum)json_val->getInt("excitation");
     }
     if(json_val->has("tempAvgAdaptRatio")) {
-        _tempAvgAdaptRatio =  floor(json_val->getDouble("tempAvgAdaptRatio") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _tempAvgAdaptRatio =  floor(json_val->getDouble("tempAvgAdaptRatio") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("tempChgAdaptRatio")) {
-        _tempChgAdaptRatio =  floor(json_val->getDouble("tempChgAdaptRatio") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _tempChgAdaptRatio =  floor(json_val->getDouble("tempChgAdaptRatio") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("compTempAvg")) {
-        _compTempAvg =  floor(json_val->getDouble("compTempAvg") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _compTempAvg =  floor(json_val->getDouble("compTempAvg") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("compTempChg")) {
-        _compTempChg =  floor(json_val->getDouble("compTempChg") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _compTempChg =  floor(json_val->getDouble("compTempChg") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("compensation")) {
-        _compensation =  floor(json_val->getDouble("compensation") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _compensation =  floor(json_val->getDouble("compensation") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("zeroTracking")) {
-        _zeroTracking =  floor(json_val->getDouble("zeroTracking") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _zeroTracking =  floor(json_val->getDouble("zeroTracking") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("command")) {
         _command =  json_val->getString("command");
@@ -190,7 +190,7 @@ int YWeighScale::set_excitation(Y_EXCITATION_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("excitation", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -221,7 +221,7 @@ int YWeighScale::set_tempAvgAdaptRatio(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("tempAvgAdaptRatio", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -284,7 +284,7 @@ int YWeighScale::set_tempChgAdaptRatio(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("tempChgAdaptRatio", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -433,7 +433,7 @@ int YWeighScale::set_zeroTracking(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("zeroTracking", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

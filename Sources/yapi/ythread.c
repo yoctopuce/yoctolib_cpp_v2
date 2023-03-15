@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ythread.c 44970 2021-05-10 10:36:22Z web $
+ * $Id: ythread.c 52551 2022-12-23 09:03:24Z seb $
  *
  * OS-independent thread and synchronization library
  *
@@ -37,9 +37,11 @@
  *
  *********************************************************************/
 
-#define __FILE_ID__  "ythread"
-#include "ythread.h"
+#include "ydef_private.h"
+#define __FILE_ID__     MK_FILEID('T','H','R')
+#define __FILENAME__   "ythread"
 
+#include "ythread.h"
 
 #ifdef WINDOWS_API
 
@@ -280,6 +282,102 @@ int    yThreadIndex(void)
     return res;
 }
 
+#elif defined(FREERTOS_API)
+
+#define EVENT_SINGLE_BIT 1
+
+void yCreateEvent(yEvent *ev)
+{
+    ev->handle = xEventGroupCreateStatic(&ev->buffer);
+}
+
+#if 0
+void yCreateManualEvent(yEvent *ev, int initialState)
+{
+    pthread_cond_init(&ev->cond, NULL);
+    pthread_mutex_init(&ev->mtx, NULL);
+    ev->verif = initialState > 0;
+    ev->autoreset = 0;
+}
+#endif
+
+void    ySetEvent(yEvent *ev)
+{
+    xEventGroupSetBits(ev->handle, EVENT_SINGLE_BIT);
+}
+
+void    yResetEvent(yEvent *ev)
+{
+    xEventGroupClearBits(ev->handle, EVENT_SINGLE_BIT);
+}
+
+
+int   yWaitForEvent(yEvent *ev, int time)
+{
+    TickType_t xTicksToWait;
+    if (time < 0) {
+        xTicksToWait = portMAX_DELAY;
+    } else {
+        xTicksToWait = pdMS_TO_TICKS( time );
+    }
+    EventBits_t xEventGroupValue = xEventGroupWaitBits(ev->handle, EVENT_SINGLE_BIT, pdTRUE, pdFALSE, xTicksToWait);
+    return xEventGroupValue & EVENT_SINGLE_BIT;
+
+}
+
+#if 0
+void   yCloseEvent(yEvent *ev)
+{
+    pthread_cond_destroy(&ev->cond);
+    pthread_mutex_destroy(&ev->mtx);
+}
+static int    yCreateDetachedThreadEx(osThread *th, const char *name, void* (*fun)(void *), void *arg)
+{
+    pthread_attr_t attr;
+    int result;
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    if (pthread_create(th, &attr, fun, arg) != 0) {
+        result = -1;
+    } else {
+        result = 0;
+    }
+#if 0
+    if (name != NULL){
+       pthread_setname_np(*th, name);
+    }
+#endif
+    pthread_attr_destroy(&attr);
+
+    return result;
+}
+
+static void    yReleaseDetachedThreadEx(osThread *th_hdl)
+{
+}
+
+
+
+static int yWaitEndThread(osThread *th)
+{
+    return pthread_join(*th, NULL);
+}
+
+
+static void yKillThread(osThread *th)
+{
+    pthread_cancel(*th);
+}
+
+#endif
+int    yThreadIndex(void)
+{
+
+    TaskHandle_t tsk = xTaskGetCurrentTaskHandle();
+    return (int)tsk;
+}
 #endif
 
 #ifndef EMBEDDED_API
@@ -371,11 +469,6 @@ void yThreadKill(yThread* yth)
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_DB_CS 128
-
-
-
-
 static u32 nbycs = 0;
 
 #ifdef __arm__
@@ -385,17 +478,23 @@ static u32 nbycs = 0;
 #else
 #define CS_BREAK  {__asm__("int3");}
 #endif
-
-#define CS_ASSERT(x)   if(!(x)){printf("ASSERT FAILED:%s:%d (%s:%d)\n",__FILE__ , __LINE__,fileid,lineno);dump_YCS(csptr);CS_BREAK}
-#define CS_TRACK_NO    24
+#ifdef FREERTOS_API
+#define CS_ASSERT(x)   if(!(x)){CS_BREAK}
+#else
+#define CS_ASSERT(x)   if(!(x)){ printf("ASSERT FAILED:%s:%d (%s:%d)\n", __FILENAME__, __LINE__, fileid, lineno); dump_YCS(csptr); CS_BREAK}
+#endif
+#define CS_TRACK_NO    8888
 
 #ifdef WINDOWS_API
 
 static CRITICAL_SECTION CS_CS;
-
+static int dbg_cs_initialsed = 0;
 void yInitDebugCS()
 {
-    InitializeCriticalSection(&CS_CS);
+    if (dbg_cs_initialsed == 0) {
+        InitializeCriticalSection(&CS_CS);
+    }
+    dbg_cs_initialsed++;
 }
 
 void yFreeDebugCS()
@@ -415,7 +514,34 @@ static void yLeaveDebugCS()
     LeaveCriticalSection(&CS_CS);
 }
 
+#elif defined(FREERTOS_API)
 
+SemaphoreHandle_t CS_handle;
+StaticSemaphore_t CS_buffer;
+static int dbg_cs_initialsed = 0;
+void yInitDebugCS()
+{
+    if (dbg_cs_initialsed == 0) {
+        CS_handle = xSemaphoreCreateMutexStatic(&CS_buffer);
+    }
+    dbg_cs_initialsed++;
+}
+
+void yFreeDebugCS()
+{
+    vSemaphoreDelete(CS_handle);
+}
+
+static void yEnterDebugCS()
+{
+    xSemaphoreTake(CS_handle, portMAX_DELAY );
+}
+
+
+static void yLeaveDebugCS()
+{
+    xSemaphoreGive(CS_handle);
+}
 #else
 static pthread_mutex_t CS_CS;
 
@@ -444,6 +570,7 @@ static void yLeaveDebugCS()
 
 #endif //ifdef WINDOWS_API
 
+#ifndef FREERTOS_API
 
 static const char* YCS_STATE_STR[] = {
      "UNALLOCATED",
@@ -459,7 +586,6 @@ static const char* YCS_ACTION_STR[] = {
      "RELEASE",
      "DELETE "
 };
-
 static void dump_YCS(yCRITICAL_SECTION *csptr)
 {
     int i;
@@ -474,7 +600,7 @@ static void dump_YCS(yCRITICAL_SECTION *csptr)
     } else {
         state_str = "INVALID";
     }
-    printf("%p:%02x: state=%s lock=%d\n", ycs, ycs->no, state_str, ycs->lock);
+    //fixme printf("%p:%02x: state=%s lock=%d\n", ycs, ycs->no, state_str, ycs->lock);
     for (i = 0; i < YCS_NB_TRACE; i++) {
         u32 action = ycs->last_actions[i].action;
         const char* action_str = "INVALID";
@@ -485,11 +611,11 @@ static void dump_YCS(yCRITICAL_SECTION *csptr)
         if (file_str == NULL) {
             file_str = "NULL";
         }
-        printf(" - %s on %s:%d  (th=%d)\n", action_str,
-            file_str, ycs->last_actions[i].lineno, ycs->last_actions[i].thread);
+        //fixme printf(" - %s on %s:%d  (th=%d)\n", action_str,
+            //file_str, ycs->last_actions[i].lineno, ycs->last_actions[i].thread);
     }
 }
-
+#endif
 
 static void pushCSAction(int threadid, const char* fileid, int lineno, yCRITICAL_SECTION_ST *csptr, YCS_ACTION action)
 {
@@ -511,7 +637,7 @@ void yDbgInitializeCriticalSection(const char* fileid, int lineno, yCRITICAL_SEC
     (*csptr)->no = nbycs++;
     yLeaveDebugCS();
     if ((*csptr)->no == CS_TRACK_NO || CS_TRACK_NO < 0) {
-        printf("NEW CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
+        //printf("NEW CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
     }
 
     (*csptr)->state = YCS_ALLOCATED;
@@ -522,6 +648,9 @@ void yDbgInitializeCriticalSection(const char* fileid, int lineno, yCRITICAL_SEC
 #elif defined(WINDOWS_API)
     res = 0;
     InitializeCriticalSection(&((*csptr)->cs));
+#elif defined(FREERTOS_API)
+    (*csptr)->handle = xSemaphoreCreateMutexStatic(&((*csptr)->buffer));
+    res = 0;
 #else
     res = pthread_mutex_init(&((*csptr)->cs), NULL);
 #endif
@@ -534,7 +663,7 @@ void yDbgInitializeCriticalSection(const char* fileid, int lineno, yCRITICAL_SEC
     res = pthread_mutex_unlock(&((*csptr)->cs));
 #endif
     CS_ASSERT(res == 0);
-    }
+}
 
 
 void yDbgEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION *csptr)
@@ -546,7 +675,7 @@ void yDbgEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION 
     CS_ASSERT((*csptr)->state == YCS_ALLOCATED);
 
     if ((*csptr)->no == CS_TRACK_NO || CS_TRACK_NO < 0) {
-        printf("enter CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
+        //printf("enter CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
 }
 
 #if MICROCHIP_API
@@ -554,6 +683,9 @@ void yDbgEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION 
 #elif defined(WINDOWS_API)
     res = 0;
     EnterCriticalSection(&((*csptr)->cs));
+#elif defined(FREERTOS_API)
+    xSemaphoreTake((*csptr)->handle, portMAX_DELAY );
+    res = 0;
 #else
     res = pthread_mutex_lock(&((*csptr)->cs));
 #endif
@@ -573,7 +705,7 @@ int yDbgTryEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTIO
     CS_ASSERT((*csptr)->state == YCS_ALLOCATED);
 
     if ((*csptr)->no == CS_TRACK_NO || CS_TRACK_NO < 0) {
-        printf("enter CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
+        //printf("enter CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
     }
 
 
@@ -586,6 +718,11 @@ int yDbgTryEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTIO
     if (res == 0)
         return 0;
     CS_ASSERT(res == 1);
+#elif defined(FREERTOS_API)
+    res = xSemaphoreTake((*csptr)->handle, 0);
+    if(res != pdTRUE){
+        return 0;
+    }
 #else
     res = pthread_mutex_trylock(&((*csptr)->cs));
     if (res == EBUSY)
@@ -596,7 +733,7 @@ int yDbgTryEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTIO
     (*csptr)->lock++;
     pushCSAction(threadid, fileid, lineno, (*csptr), YCS_LOCKTRY);
     return 1;
-    }
+}
 
 
 void yDbgLeaveCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION *csptr)
@@ -609,7 +746,7 @@ void yDbgLeaveCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION 
     CS_ASSERT((*csptr)->state == YCS_ALLOCATED);
     CS_ASSERT((*csptr)->lock == 1);
     if ((*csptr)->no == CS_TRACK_NO || CS_TRACK_NO < 0) {
-        printf("leave CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
+        //printf("leave CS on %s:%d:%p (%d)\n", fileid, lineno, (*csptr), (*csptr)->no);
     }
 
     (*csptr)->lock--;
@@ -621,6 +758,9 @@ void yDbgLeaveCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION 
 #elif defined(WINDOWS_API)
     res = 0;
     LeaveCriticalSection(&((*csptr)->cs));
+#elif defined(FREERTOS_API)
+    xSemaphoreGive((*csptr)->handle);
+    res = 0;
 #else
     res = pthread_mutex_unlock(&((*csptr)->cs));
 #endif
@@ -638,7 +778,7 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
     CS_ASSERT((*csptr)->lock == 0);
 
     if ((*csptr)->no == CS_TRACK_NO || CS_TRACK_NO < 0) {
-        printf("delete CS on %s:%d:%p (%p)\n", fileid, lineno, (*csptr), &((*csptr)->cs));
+        //printf("delete CS on %s:%d:%p (%p)\n", fileid, lineno, (*csptr), &((*csptr)->cs));
     }
 
 #if MICROCHIP_API
@@ -647,6 +787,9 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 #elif defined(WINDOWS_API)
     res = 0;
     DeleteCriticalSection(&((*csptr)->cs));
+#elif defined(FREERTOS_API)
+    res = 0;
+    vSemaphoreDelete((*csptr)->handle);
 #else
     res = pthread_mutex_destroy(&((*csptr)->cs));
 #endif
@@ -659,17 +802,17 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs)
 {
-    *cs = xSemaphoreCreateMutex();
+    cs->handle = xSemaphoreCreateMutexStatic(&(cs->buffer));
 }
 
 void yEnterCriticalSection(yCRITICAL_SECTION *cs)
 {
-    xSemaphoreTake(*cs, portMAX_DELAY );
+    xSemaphoreTake(cs->handle, portMAX_DELAY );
 }
 
 int yTryEnterCriticalSection(yCRITICAL_SECTION *cs)
 {
-    BaseType_t res = xSemaphoreTake(*cs, 0);
+    BaseType_t res = xSemaphoreTake(cs->handle, 0);
     if (res == pdTRUE){
         return 1;
     }
@@ -679,14 +822,12 @@ int yTryEnterCriticalSection(yCRITICAL_SECTION *cs)
 void yLeaveCriticalSection(yCRITICAL_SECTION *cs)
 {
 
-    xSemaphoreGive(*cs);
+    xSemaphoreGive(cs->handle);
 }
 
 void yDeleteCriticalSection(yCRITICAL_SECTION *cs)
 {
-
-    vSemaphoreDelete(*cs);
-    *cs = NULL;
+    vSemaphoreDelete(cs->handle);
 }
 
 #elif !defined(MICROCHIP_API)

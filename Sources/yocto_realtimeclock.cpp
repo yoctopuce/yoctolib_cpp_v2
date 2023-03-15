@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_realtimeclock.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_realtimeclock.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindRealTimeClock(), the high-level API for RealTimeClock functions
  *
@@ -59,6 +59,7 @@ YRealTimeClock::YRealTimeClock(const string& func): YFunction(func)
     ,_dateTime(DATETIME_INVALID)
     ,_utcOffset(UTCOFFSET_INVALID)
     ,_timeSet(TIMESET_INVALID)
+    ,_disableHostSync(DISABLEHOSTSYNC_INVALID)
     ,_valueCallbackRealTimeClock(NULL)
 //--- (end of YRealTimeClock initialization)
 {
@@ -87,6 +88,9 @@ int YRealTimeClock::_parseAttr(YJSONObject *json_val)
     }
     if(json_val->has("timeSet")) {
         _timeSet =  (Y_TIMESET_enum)json_val->getInt("timeSet");
+    }
+    if(json_val->has("disableHostSync")) {
+        _disableHostSync =  (Y_DISABLEHOSTSYNC_enum)json_val->getInt("disableHostSync");
     }
     return YFunction::_parseAttr(json_val);
 }
@@ -137,7 +141,7 @@ int YRealTimeClock::set_unixTime(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("unixTime", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -223,7 +227,7 @@ int YRealTimeClock::set_utcOffset(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("utcOffset", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -264,6 +268,66 @@ Y_TIMESET_enum YRealTimeClock::get_timeSet(void)
 }
 
 /**
+ * Returns true if the automatic clock synchronization with host has been disabled,
+ * and false otherwise.
+ *
+ * @return either YRealTimeClock::DISABLEHOSTSYNC_FALSE or YRealTimeClock::DISABLEHOSTSYNC_TRUE,
+ * according to true if the automatic clock synchronization with host has been disabled,
+ *         and false otherwise
+ *
+ * On failure, throws an exception or returns YRealTimeClock::DISABLEHOSTSYNC_INVALID.
+ */
+Y_DISABLEHOSTSYNC_enum YRealTimeClock::get_disableHostSync(void)
+{
+    Y_DISABLEHOSTSYNC_enum res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YRealTimeClock::DISABLEHOSTSYNC_INVALID;
+                }
+            }
+        }
+        res = _disableHostSync;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Changes the automatic clock synchronization with host working state.
+ * To disable automatic synchronization, set the value to true.
+ * To enable automatic synchronization (default), set the value to false.
+ *
+ * @param newval : either YRealTimeClock::DISABLEHOSTSYNC_FALSE or YRealTimeClock::DISABLEHOSTSYNC_TRUE,
+ * according to the automatic clock synchronization with host working state
+ *
+ * @return YAPI::SUCCESS if the call succeeds.
+ *
+ * On failure, throws an exception or returns a negative error code.
+ */
+int YRealTimeClock::set_disableHostSync(Y_DISABLEHOSTSYNC_enum newval)
+{
+    string rest_val;
+    int res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        rest_val = (newval>0 ? "1" : "0");
+        res = _setAttr("disableHostSync", rest_val);
+    } catch (std::exception &) {
+         yLeaveCriticalSection(&_this_cs);
+         throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
  * Retrieves a real-time clock for a given identifier.
  * The identifier can be specified using several formats:
  * <ul>
@@ -287,7 +351,7 @@ Y_TIMESET_enum YRealTimeClock::get_timeSet(void)
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the real-time clock, for instance
- *         YHUBGSM3.realTimeClock.
+ *         YHUBGSM5.realTimeClock.
  *
  * @return a YRealTimeClock object allowing you to drive the real-time clock.
  */

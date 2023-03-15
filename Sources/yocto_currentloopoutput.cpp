@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_currentloopoutput.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_currentloopoutput.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindCurrentLoopOutput(), the high-level API for CurrentLoopOutput functions
  *
@@ -79,13 +79,13 @@ const double YCurrentLoopOutput::CURRENTATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
 int YCurrentLoopOutput::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("current")) {
-        _current =  floor(json_val->getDouble("current") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _current =  floor(json_val->getDouble("current") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("currentTransition")) {
         _currentTransition =  json_val->getString("currentTransition");
     }
     if(json_val->has("currentAtStartUp")) {
-        _currentAtStartUp =  floor(json_val->getDouble("currentAtStartUp") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _currentAtStartUp =  floor(json_val->getDouble("currentAtStartUp") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("loopPower")) {
         _loopPower =  (Y_LOOPPOWER_enum)json_val->getInt("loopPower");
@@ -111,7 +111,7 @@ int YCurrentLoopOutput::set_current(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("current", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -204,7 +204,7 @@ int YCurrentLoopOutput::set_currentAtStartUp(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("currentAtStartUp", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

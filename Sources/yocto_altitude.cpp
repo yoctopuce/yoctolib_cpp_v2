@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_altitude.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_altitude.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindAltitude(), the high-level API for Altitude functions
  *
@@ -77,7 +77,7 @@ const string YAltitude::TECHNOLOGY_INVALID = YAPI_INVALID_STRING;
 int YAltitude::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("qnh")) {
-        _qnh =  floor(json_val->getDouble("qnh") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _qnh =  floor(json_val->getDouble("qnh") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("technology")) {
         _technology =  json_val->getString("technology");
@@ -104,7 +104,7 @@ int YAltitude::set_currentValue(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("currentValue", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -135,7 +135,7 @@ int YAltitude::set_qnh(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("qnh", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

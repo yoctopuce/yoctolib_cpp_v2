@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_serialport.h 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_serialport.h 53034 2023-02-02 10:16:55Z seb $
  *
  * Declares yFindSerialPort(), the high-level API for SerialPort functions
  *
@@ -51,10 +51,13 @@ namespace YOCTOLIB_NAMESPACE
 #endif
 //--- (generated code: YSerialPort return codes)
 //--- (end of generated code: YSerialPort return codes)
+class YSnoopingRecord; // forward declaration
 //--- (generated code: YSerialPort definitions)
 class YSerialPort; // forward declaration
 
 typedef void (*YSerialPortValueCallback)(YSerialPort *func, const string& functionValue);
+typedef void (*YSnoopingCallback)(YSerialPort *serialPort, YSnoopingRecord rec);
+
 #ifndef _Y_VOLTAGELEVEL_ENUM
 #define _Y_VOLTAGELEVEL_ENUM
 typedef enum {
@@ -66,6 +69,7 @@ typedef enum {
     Y_VOLTAGELEVEL_RS232 = 5,
     Y_VOLTAGELEVEL_RS485 = 6,
     Y_VOLTAGELEVEL_TTL1V8 = 7,
+    Y_VOLTAGELEVEL_SDI12 = 8,
     Y_VOLTAGELEVEL_INVALID = -1,
 } Y_VOLTAGELEVEL_enum;
 #endif
@@ -166,6 +170,8 @@ class YOCTO_CLASS_EXPORT YSerialPort: public YFunction {
 #endif
 //--- (end of generated code: YSerialPort declaration)
 protected:
+    static void yInternalEventCallback(YSerialPort* obj, const string& value);
+
     //--- (generated code: YSerialPort attributes)
     // Attributes (function value cache)
     int             _rxCount;
@@ -186,6 +192,8 @@ protected:
     int             _rxptr;
     string          _rxbuff;
     int             _rxbuffptr;
+    int             _eventPos;
+    YSnoopingCallback _eventCallback;
 
     friend YSerialPort *yFindSerialPort(const string& func);
     friend YSerialPort *yFirstSerialPort(void);
@@ -221,6 +229,7 @@ public:
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_RS232 = Y_VOLTAGELEVEL_RS232;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_RS485 = Y_VOLTAGELEVEL_RS485;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_TTL1V8 = Y_VOLTAGELEVEL_TTL1V8;
+    static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_SDI12 = Y_VOLTAGELEVEL_SDI12;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_INVALID = Y_VOLTAGELEVEL_INVALID;
     static const string SERIALMODE_INVALID;
 
@@ -434,8 +443,8 @@ public:
      *
      * @return a value among YSerialPort::VOLTAGELEVEL_OFF, YSerialPort::VOLTAGELEVEL_TTL3V,
      * YSerialPort::VOLTAGELEVEL_TTL3VR, YSerialPort::VOLTAGELEVEL_TTL5V, YSerialPort::VOLTAGELEVEL_TTL5VR,
-     * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485 and YSerialPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage level used on the serial line
+     * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485, YSerialPort::VOLTAGELEVEL_TTL1V8 and
+     * YSerialPort::VOLTAGELEVEL_SDI12 corresponding to the voltage level used on the serial line
      *
      * On failure, throws an exception or returns YSerialPort::VOLTAGELEVEL_INVALID.
      */
@@ -455,8 +464,8 @@ public:
      *
      * @param newval : a value among YSerialPort::VOLTAGELEVEL_OFF, YSerialPort::VOLTAGELEVEL_TTL3V,
      * YSerialPort::VOLTAGELEVEL_TTL3VR, YSerialPort::VOLTAGELEVEL_TTL5V, YSerialPort::VOLTAGELEVEL_TTL5VR,
-     * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485 and YSerialPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage type used on the serial line
+     * YSerialPort::VOLTAGELEVEL_RS232, YSerialPort::VOLTAGELEVEL_RS485, YSerialPort::VOLTAGELEVEL_TTL1V8 and
+     * YSerialPort::VOLTAGELEVEL_SDI12 corresponding to the voltage type used on the serial line
      *
      * @return YAPI::SUCCESS if the call succeeds.
      *
@@ -616,6 +625,8 @@ public:
      * @return the number of bytes available to read
      */
     virtual int         read_avail(void);
+
+    virtual int         end_tell(void);
 
     /**
      * Sends a text line query to the serial port, and reads the reply, if any.
@@ -811,6 +822,20 @@ public:
     virtual string      readHex(int nBytes);
 
     /**
+     * Emits a BREAK condition on the serial interface. When the specified
+     * duration is 0, the BREAK signal will be exactly one character wide.
+     * When the duration is between 1 and 100, the BREAK condition will
+     * be hold for the specified number of milliseconds.
+     *
+     * @param duration : 0 for a standard BREAK, or duration between 1 and 100 ms
+     *
+     * @return YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    virtual int         sendBreak(int duration);
+
+    /**
      * Manually sets the state of the RTS line. This function has no effect when
      * hardware handshake is enabled, as the RTS line is driven automatically.
      *
@@ -849,6 +874,24 @@ public:
      * On failure, throws an exception or returns an empty array.
      */
     virtual vector<YSnoopingRecord> snoopMessages(int maxWait);
+
+    /**
+     * Registers a callback function to be called each time that a message is sent or
+     * received by the serial port. The callback is invoked only during the execution of
+     * ySleep or yHandleEvents. This provides control over the time when
+     * the callback is triggered. For good responsiveness, remember to call one of these
+     * two functions periodically. To unregister a callback, pass a NULL pointer as argument.
+     *
+     * @param callback : the callback function to call, or a NULL pointer.
+     *         The callback function should take four arguments:
+     *         the YSerialPort object that emitted the event, and
+     *         the YSnoopingRecord object that describes the message
+     *         sent or received.
+     *         On failure, throws an exception or returns a negative error code.
+     */
+    virtual int         registerSnoopingCallback(YSnoopingCallback callback);
+
+    virtual int         _internalEventHandler(string advstr);
 
     /**
      * Sends an ASCII string to the serial port, preceeded with an STX code and

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_wakeupmonitor.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_wakeupmonitor.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindWakeUpMonitor(), the high-level API for WakeUpMonitor functions
  *
@@ -147,7 +147,7 @@ int YWakeUpMonitor::set_powerDuration(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("powerDuration", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -201,7 +201,7 @@ int YWakeUpMonitor::set_sleepCountdown(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("sleepCountdown", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -255,7 +255,7 @@ int YWakeUpMonitor::set_nextWakeUp(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("nextWakeUp", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -333,7 +333,7 @@ int YWakeUpMonitor::set_wakeUpState(Y_WAKEUPSTATE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("wakeUpState", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -389,7 +389,7 @@ s64 YWakeUpMonitor::get_rtcTime(void)
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the wake-up monitor, for instance
- *         YHUBGSM3.wakeUpMonitor.
+ *         YHUBGSM5.wakeUpMonitor.
  *
  * @return a YWakeUpMonitor object allowing you to drive the wake-up monitor.
  */

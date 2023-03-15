@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_network.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_network.cpp 53431 2023-03-06 14:19:35Z seb $
  *
  *  Implements yFindNetwork(), the high-level API for Network functions
  *
@@ -60,6 +60,7 @@ YNetwork::YNetwork(const string& func): YFunction(func)
     ,_ipAddress(IPADDRESS_INVALID)
     ,_subnetMask(SUBNETMASK_INVALID)
     ,_router(ROUTER_INVALID)
+    ,_currentDNS(CURRENTDNS_INVALID)
     ,_ipConfig(IPCONFIG_INVALID)
     ,_primaryDNS(PRIMARYDNS_INVALID)
     ,_secondaryDNS(SECONDARYDNS_INVALID)
@@ -67,12 +68,14 @@ YNetwork::YNetwork(const string& func): YFunction(func)
     ,_userPassword(USERPASSWORD_INVALID)
     ,_adminPassword(ADMINPASSWORD_INVALID)
     ,_httpPort(HTTPPORT_INVALID)
+    ,_httpsPort(HTTPSPORT_INVALID)
     ,_defaultPage(DEFAULTPAGE_INVALID)
     ,_discoverable(DISCOVERABLE_INVALID)
     ,_wwwWatchdogDelay(WWWWATCHDOGDELAY_INVALID)
     ,_callbackUrl(CALLBACKURL_INVALID)
     ,_callbackMethod(CALLBACKMETHOD_INVALID)
     ,_callbackEncoding(CALLBACKENCODING_INVALID)
+    ,_callbackTemplate(CALLBACKTEMPLATE_INVALID)
     ,_callbackCredentials(CALLBACKCREDENTIALS_INVALID)
     ,_callbackInitialDelay(CALLBACKINITIALDELAY_INVALID)
     ,_callbackSchedule(CALLBACKSCHEDULE_INVALID)
@@ -96,6 +99,7 @@ const string YNetwork::MACADDRESS_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::IPADDRESS_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::SUBNETMASK_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::ROUTER_INVALID = YAPI_INVALID_STRING;
+const string YNetwork::CURRENTDNS_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::IPCONFIG_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::PRIMARYDNS_INVALID = YAPI_INVALID_STRING;
 const string YNetwork::SECONDARYDNS_INVALID = YAPI_INVALID_STRING;
@@ -124,6 +128,9 @@ int YNetwork::_parseAttr(YJSONObject *json_val)
     if(json_val->has("router")) {
         _router =  json_val->getString("router");
     }
+    if(json_val->has("currentDNS")) {
+        _currentDNS =  json_val->getString("currentDNS");
+    }
     if(json_val->has("ipConfig")) {
         _ipConfig =  json_val->getString("ipConfig");
     }
@@ -145,6 +152,9 @@ int YNetwork::_parseAttr(YJSONObject *json_val)
     if(json_val->has("httpPort")) {
         _httpPort =  json_val->getInt("httpPort");
     }
+    if(json_val->has("httpsPort")) {
+        _httpsPort =  json_val->getInt("httpsPort");
+    }
     if(json_val->has("defaultPage")) {
         _defaultPage =  json_val->getString("defaultPage");
     }
@@ -162,6 +172,9 @@ int YNetwork::_parseAttr(YJSONObject *json_val)
     }
     if(json_val->has("callbackEncoding")) {
         _callbackEncoding =  (Y_CALLBACKENCODING_enum)json_val->getInt("callbackEncoding");
+    }
+    if(json_val->has("callbackTemplate")) {
+        _callbackTemplate =  (Y_CALLBACKTEMPLATE_enum)json_val->getInt("callbackTemplate");
     }
     if(json_val->has("callbackCredentials")) {
         _callbackCredentials =  json_val->getString("callbackCredentials");
@@ -339,6 +352,35 @@ string YNetwork::get_router(void)
             }
         }
         res = _router;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the IP address of the DNS server currently used by the device.
+ *
+ * @return a string corresponding to the IP address of the DNS server currently used by the device
+ *
+ * On failure, throws an exception or returns YNetwork::CURRENTDNS_INVALID.
+ */
+string YNetwork::get_currentDNS(void)
+{
+    string res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YNetwork::CURRENTDNS_INVALID;
+                }
+            }
+        }
+        res = _currentDNS;
     } catch (std::exception &) {
         yLeaveCriticalSection(&_this_cs);
         throw;
@@ -748,8 +790,64 @@ int YNetwork::set_httpPort(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("httpPort", rest_val);
+    } catch (std::exception &) {
+         yLeaveCriticalSection(&_this_cs);
+         throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the secure TCP port used to serve the hub web UI.
+ *
+ * @return an integer corresponding to the secure TCP port used to serve the hub web UI
+ *
+ * On failure, throws an exception or returns YNetwork::HTTPSPORT_INVALID.
+ */
+int YNetwork::get_httpsPort(void)
+{
+    int res = 0;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YNetwork::HTTPSPORT_INVALID;
+                }
+            }
+        }
+        res = _httpsPort;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Changes the secure TCP port used to serve the hub web UI. The default value is port 4443,
+ * which is the default for all Web servers. When you change this parameter, remember to call the saveToFlash()
+ * method of the module if the modification must be kept.
+ *
+ * @param newval : an integer corresponding to the secure TCP port used to serve the hub web UI
+ *
+ * @return YAPI::SUCCESS if the call succeeds.
+ *
+ * On failure, throws an exception or returns a negative error code.
+ */
+int YNetwork::set_httpsPort(int newval)
+{
+    string rest_val;
+    int res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
+        res = _setAttr("httpsPort", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
          throw;
@@ -932,7 +1030,7 @@ int YNetwork::set_wwwWatchdogDelay(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("wwwWatchdogDelay", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1047,7 +1145,7 @@ int YNetwork::set_callbackMethod(Y_CALLBACKMETHOD_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("callbackMethod", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1117,8 +1215,70 @@ int YNetwork::set_callbackEncoding(Y_CALLBACKENCODING_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("callbackEncoding", rest_val);
+    } catch (std::exception &) {
+         yLeaveCriticalSection(&_this_cs);
+         throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the activation state of the custom template file to customize callback
+ * format. If the custom callback template is disabled, it will be ignored even
+ * if present on the YoctoHub.
+ *
+ * @return either YNetwork::CALLBACKTEMPLATE_OFF or YNetwork::CALLBACKTEMPLATE_ON, according to the
+ * activation state of the custom template file to customize callback
+ *         format
+ *
+ * On failure, throws an exception or returns YNetwork::CALLBACKTEMPLATE_INVALID.
+ */
+Y_CALLBACKTEMPLATE_enum YNetwork::get_callbackTemplate(void)
+{
+    Y_CALLBACKTEMPLATE_enum res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YNetwork::CALLBACKTEMPLATE_INVALID;
+                }
+            }
+        }
+        res = _callbackTemplate;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Enable the use of a template file to customize callbacks format.
+ * When the custom callback template file is enabled, the template file
+ * will be loaded for each callback in order to build the data to post to the
+ * server. If template file does not exist on the YoctoHub, the callback will
+ * fail with an error message indicating the name of the expected template file.
+ *
+ * @param newval : either YNetwork::CALLBACKTEMPLATE_OFF or YNetwork::CALLBACKTEMPLATE_ON
+ *
+ * @return YAPI::SUCCESS if the call succeeds.
+ *
+ * On failure, throws an exception or returns a negative error code.
+ */
+int YNetwork::set_callbackTemplate(Y_CALLBACKTEMPLATE_enum newval)
+{
+    string rest_val;
+    int res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        rest_val = (newval>0 ? "1" : "0");
+        res = _setAttr("callbackTemplate", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
          throw;
@@ -1257,7 +1417,7 @@ int YNetwork::set_callbackInitialDelay(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("callbackInitialDelay", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1368,7 +1528,7 @@ int YNetwork::set_callbackMinDelay(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("callbackMinDelay", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1424,7 +1584,7 @@ int YNetwork::set_callbackMaxDelay(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("callbackMaxDelay", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

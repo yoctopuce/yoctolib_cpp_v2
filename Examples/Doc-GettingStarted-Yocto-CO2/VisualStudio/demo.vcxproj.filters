@@ -316,6 +316,9 @@
     </ClCompile>
     
 <ClCompile Include="..\..\..\Sources\yocto_carbondioxide.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_humidity.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_pressure.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_temperature.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_datalogger.cpp"><Filter>YoctoLib</Filter></ClCompile>
 
   </ItemGroup>
@@ -412,6 +415,9 @@
     </ClInclude>
     
 <ClInclude Include="..\..\..\Sources\yocto_carbondioxide.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_humidity.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_pressure.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_temperature.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_datalogger.h"><Filter>YoctoLib</Filter></ClInclude>
 
 

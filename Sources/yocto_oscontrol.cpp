@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_oscontrol.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_oscontrol.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindOsControl(), the high-level API for OsControl functions
  *
@@ -116,7 +116,7 @@ int YOsControl::set_shutdownCountdown(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("shutdownCountdown", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

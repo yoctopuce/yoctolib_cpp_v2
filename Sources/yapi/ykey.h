@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ykey.h 44979 2021-05-10 11:00:58Z web $
+ * $Id: ykey.h 51526 2022-11-07 14:44:43Z seb $
  *
  * Declaration of standard key computations
  *
@@ -60,7 +60,7 @@ int CheckWSAuth(u32 nonce, const u8* ha1, const u8* to_verify, u8* out);
 int yParseWWWAuthenticate(char* replybuf, int replysize, char** method, char** realm, char** qop, char** nonce, char** opaque);
 
 // Fill in buf with a proper digest authorization header
-void yDigestAuthorization(char* buf, int bufsize, const char* user, const char* realm, const u8* ha1,
+int yDigestAuthorization(char* buf, int bufsize, const char* user, const char* realm, const u8* ha1,
                           const char* nonce, const char* opaque, u32* nc, const char* method, const char* uri);
 
 // Note: This API is designed for cooperative multitasking

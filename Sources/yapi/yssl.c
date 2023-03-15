@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.c 45122 2021-05-18 08:41:17Z web $
+ * $Id: yssl.c 53508 2023-03-10 09:48:02Z seb $
  *
  * Implementation of a client TCP stack with SSL
  *
@@ -37,7 +37,9 @@
  *
  *********************************************************************/
 
-#define __FILE_ID__  "yssl"
+#include "ydef_private.h"
+#define __FILE_ID__     MK_FILEID('S','S','L')
+#define __FILENAME__   "yssl"
 
 #ifndef NO_YSSL
 #include "mbedtls/ssl.h"
@@ -47,14 +49,13 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
 #include "mbedtls/threading.h"
+#include <mbedtls/base64.h>
+#include <mbedtls/pem.h>
 #endif
 
-
-#include "ydef.h"
 #include "yproto.h"
 #include "ytcp.h"
 #include "yssl.h"
-
 
 #ifndef NO_YSSL
 
@@ -63,10 +64,10 @@
 #else
 #define SOCK_ERR    (errno)
 #endif
-#define REPORT_ERR(msg) if(errmsg){ YSPRINTF(errmsg,YOCTO_ERRMSG_LEN,"%s (%s:%d / errno=%d)",(msg), __FILE_ID__, __LINE__, SOCK_ERR);errmsg[YOCTO_ERRMSG_LEN-1]='\0';}
+#define REPORT_ERR(msg) if(errmsg){ YSPRINTF(errmsg,YOCTO_ERRMSG_LEN,"%s (%s:%d / errno=%d)",(msg), __FILENAME__, __LINE__, SOCK_ERR);errmsg[YOCTO_ERRMSG_LEN-1]='\0';}
 
 
-#define FMT_MBEDTLS_ERR(errno) format_mbedtls_err(__FILE_ID__, __LINE__, errno, errmsg)
+#define FMT_MBEDTLS_ERR(errno) format_mbedtls_err(__FILENAME__, __LINE__, errno, errmsg)
 
 static int format_mbedtls_err(const char* fileid, int lineno, int err, char* errmsg)
 {
@@ -93,7 +94,54 @@ static void my_debug(void* ctx, int level, const char* file, int line, const cha
 #endif
 
 
-int yssl_generate_private_key(const char* keyfile, char* errmsg)
+
+
+
+
+
+
+
+// Every line ends with `\n`
+// To add more root certificates, just concatenate them.
+const char SSL_CA_PEM[] =
+// yoctopuce-demo root certificate
+"-----BEGIN CERTIFICATE-----\n"
+"MIIF3jCCA8agAwIBAgIQAf1tMPyjylGoG7xkDjUDLTANBgkqhkiG9w0BAQwFADCB\n"
+"iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0pl\n"
+"cnNleSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNV\n"
+"BAMTJVVTRVJUcnVzdCBSU0EgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMTAw\n"
+"MjAxMDAwMDAwWhcNMzgwMTE4MjM1OTU5WjCBiDELMAkGA1UEBhMCVVMxEzARBgNV\n"
+"BAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0plcnNleSBDaXR5MR4wHAYDVQQKExVU\n"
+"aGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNVBAMTJVVTRVJUcnVzdCBSU0EgQ2Vy\n"
+"dGlmaWNhdGlvbiBBdXRob3JpdHkwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIK\n"
+"AoICAQCAEmUXNg7D2wiz0KxXDXbtzSfTTK1Qg2HiqiBNCS1kCdzOiZ/MPans9s/B\n"
+"3PHTsdZ7NygRK0faOca8Ohm0X6a9fZ2jY0K2dvKpOyuR+OJv0OwWIJAJPuLodMkY\n"
+"tJHUYmTbf6MG8YgYapAiPLz+E/CHFHv25B+O1ORRxhFnRghRy4YUVD+8M/5+bJz/\n"
+"Fp0YvVGONaanZshyZ9shZrHUm3gDwFA66Mzw3LyeTP6vBZY1H1dat//O+T23LLb2\n"
+"VN3I5xI6Ta5MirdcmrS3ID3KfyI0rn47aGYBROcBTkZTmzNg95S+UzeQc0PzMsNT\n"
+"79uq/nROacdrjGCT3sTHDN/hMq7MkztReJVni+49Vv4M0GkPGw/zJSZrM233bkf6\n"
+"c0Plfg6lZrEpfDKEY1WJxA3Bk1QwGROs0303p+tdOmw1XNtB1xLaqUkL39iAigmT\n"
+"Yo61Zs8liM2EuLE/pDkP2QKe6xJMlXzzawWpXhaDzLhn4ugTncxbgtNMs+1b/97l\n"
+"c6wjOy0AvzVVdAlJ2ElYGn+SNuZRkg7zJn0cTRe8yexDJtC/QV9AqURE9JnnV4ee\n"
+"UB9XVKg+/XRjL7FQZQnmWEIuQxpMtPAlR1n6BB6T1CZGSlCBst6+eLf8ZxXhyVeE\n"
+"Hg9j1uliutZfVS7qXMYoCAQlObgOK6nyTJccBz8NUvXt7y+CDwIDAQABo0IwQDAd\n"
+"BgNVHQ4EFgQUU3m/WqorSs9UgOHYm8Cd8rIDZsswDgYDVR0PAQH/BAQDAgEGMA8G\n"
+"A1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEMBQADggIBAFzUfA3P9wF9QZllDHPF\n"
+"Up/L+M+ZBn8b2kMVn54CVVeWFPFSPCeHlCjtHzoBN6J2/FNQwISbxmtOuowhT6KO\n"
+"VWKR82kV2LyI48SqC/3vqOlLVSoGIG1VeCkZ7l8wXEskEVX/JJpuXior7gtNn3/3\n"
+"ATiUFJVDBwn7YKnuHKsSjKCaXqeYalltiz8I+8jRRa8YFWSQEg9zKC7F4iRO/Fjs\n"
+"8PRF/iKz6y+O0tlFYQXBl2+odnKPi4w2r78NBc5xjeambx9spnFixdjQg3IM8WcR\n"
+"iQycE0xyNN+81XHfqnHd4blsjDwSXWXavVcStkNr/+XeTWYRUc+ZruwXtuhxkYze\n"
+"Sf7dNXGiFSeUHM9h4ya7b6NnJSFd5t0dCy5oGzuCr+yDZ4XUmFF0sbmZgIn/f3gZ\n"
+"XHlKYC6SQK5MNyosycdiyA5d9zZbyuAlJQG03RoHnHcAP9Dc1ew91Pq7P8yF1m9/\n"
+"qS3fuQL39ZeatTXaw2ewh0qpKJ4jjv9cJ2vhsE/zB+4ALtRZh8tSQZXq9EfX7mRB\n"
+"VXyNWQKV3WKdwrnuWih0hKWbt5DHDAff9Yk2dDLWKMGwsAvgnEzDHNb842m1R0aB\n"
+"L6KCq9NjRHDEjf8tM7qtj3u1cIiuPhnPQCjY/MiQu12ZIvVS5ljFH4gxQ+6IHdfG\n"
+"jjxDah2nGN59PRbxYvnKkKj9\n"
+"-----END CERTIFICATE-----\n"
+;
+
+int yssl_generate_private_key(const char* keyfile, u32 nbits, char* errmsg)
 {
     int ret;
     mbedtls_pk_context key;
@@ -108,7 +156,7 @@ int yssl_generate_private_key(const char* keyfile, char* errmsg)
         return FMT_MBEDTLS_ERR(ret);
     }
 
-    ret = mbedtls_rsa_gen_key(mbedtls_pk_rsa(key), mbedtls_ctr_drbg_random, &ctr_drbg, 4096, 65537);
+    ret = mbedtls_rsa_gen_key(mbedtls_pk_rsa(key), mbedtls_ctr_drbg_random, &ctr_drbg, nbits, 65537);
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
     }
@@ -297,6 +345,7 @@ int yTcpInitSSL(char* errmsg)
     mbedtls_x509_crt_init(&srvcert);
     mbedtls_ctr_drbg_init(&ctr_drbg);
     mbedtls_pk_init(&pkey);
+    
 
     SSLLOG("Seeding the random number generator...\n");
     mbedtls_entropy_init(&entropy);
@@ -305,9 +354,9 @@ int yTcpInitSSL(char* errmsg)
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
     }
-#if 0
-    //ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)mbedtls_test_cas_pem,
-    //mbedtls_test_cas_pem_len);
+#if 1
+    ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)SSL_CA_PEM,
+        sizeof(SSL_CA_PEM));
 
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
@@ -317,8 +366,8 @@ int yTcpInitSSL(char* errmsg)
 }
 
 
-// must be called aftery TcpInitSSL
-int yTcpSetCertificateSSL(const char* certfile, const char* keyfile, char* errmsg)
+// must be called after TcpInitSSL
+int yTcpSetSrvCertificateSSL(const char* certfile, const char* keyfile, char* errmsg)
 {
     int ret;
     FILE* fd;
@@ -360,6 +409,59 @@ int yTcpSetCertificateSSL(const char* certfile, const char* keyfile, char* errms
 
     return YAPI_SUCCESS;
 }
+int yTcpAddClientCertificateSSL(const u8* cert, u32 cert_len, char* errmsg)
+{
+    int ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)cert, cert_len);
+    if (ret != 0) {
+        return FMT_MBEDTLS_ERR(ret);
+    }
+    return YAPI_SUCCESS;
+}
+
+int yTcpDownloadSSLCert(const char* host, int port, u64 mstimeout, u8* buffer, u32 maxsize, u32* neededsize, char* errmsg)
+{
+    YSSL_SOCKET sslSkt;
+
+    const char* pem_begin_crt = "-----BEGIN CERTIFICATE-----\n";
+    const char* pem_end_crt = "-----END CERTIFICATE-----\n";
+    int res;
+
+
+
+    res = yTcpOpenSSL(&sslSkt, host, port, 1, mstimeout, errmsg);
+    if (res < 0) {
+        return res;
+    }
+
+    // allow non trusted certificate since we have no root CA installed
+    const mbedtls_x509_crt* chain;
+    chain = mbedtls_ssl_get_peer_cert(sslSkt->ssl);
+    *neededsize = 0;
+    res = YAPI_SUCCESS;
+    while (chain != NULL) {
+        size_t written = 0;
+        int mbedtls_res = mbedtls_pem_write_buffer(
+            pem_begin_crt, pem_end_crt, chain->raw.p, chain->raw.len,
+            buffer, maxsize, &written);
+        if (mbedtls_res == MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL) {
+            *neededsize += (u32)written;
+            if (errmsg) {
+                YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "Certificate is too big to fit in the buffer");
+            }
+            res = YAPI_BUFFER_TOO_SMALL;
+        } else if (mbedtls_res < 0) {
+            yTcpCloseSSL(sslSkt);
+            return FMT_MBEDTLS_ERR(mbedtls_res);
+        } else {
+            *neededsize += (u32)written;
+            buffer += (u32)written;
+            maxsize -= (u32)written;
+        }
+        chain = chain->next;
+    }
+    yTcpCloseSSL(sslSkt);
+    return res;
+}
 
 void yTcpShutdownSSL(void)
 {
@@ -381,7 +483,6 @@ static int mbedtls_ysend(void* ctx, const unsigned char* buf, size_t tosend)
     //dbglog("need to send %d bytes encrypted\n", tosend);
     int res = yTcpWriteBasic(yssl->tcpskt, buf, (int)tosend, errmsg);
     if (res < 0) {
-        dbglog("Unable to send encrypted data(%s)\n", errmsg);
         return MBEDTLS_ERR_NET_SEND_FAILED;
     }
     //dbglog("sent %d bytes encrypted on socket %d\n", res, yssl->tcpskt);
@@ -411,8 +512,7 @@ static int mbedtls_yread(void* ctx, unsigned char* buf, size_t avail)
     return readed;
 }
 
-
-static int do_ssl_handshake(YSSL_SOCKET yssl, char* errmsg)
+static int do_ssl_handshake(YSSL_SOCKET yssl, int skip_cert_validation, char* errmsg)
 {
     int ret;
     u32 flags;
@@ -428,14 +528,22 @@ static int do_ssl_handshake(YSSL_SOCKET yssl, char* errmsg)
         if (yssl->flags & YSSL_TCP_SERVER_MODE && flags == MBEDTLS_X509_BADCERT_SKIP_VERIFY) {
             return YAPI_SUCCESS;
         }
-
-        mbedtls_x509_crt_verify_info(errmsg, YOCTO_ERRMSG_LEN,
-                                     "SSL:", flags);
-
-        if (flags == MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
+        if ((flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) && ((yContext->sslCertOptions& YSSL_NO_TRUSTED_CA_CHECK) || skip_cert_validation)) {
             // allow non trusted certificate since we have no root CA installed
-            dbglog("%s", errmsg);
-        } else {
+            flags &= ~MBEDTLS_X509_BADCERT_NOT_TRUSTED;
+        }
+        if ((flags & MBEDTLS_X509_BADCERT_EXPIRED) && ((yContext->sslCertOptions & YSSL_NO_EXPIRATION_CHECK) || skip_cert_validation)) {
+            // allow non trusted certificate since we have no root CA installed
+            flags &= ~MBEDTLS_X509_BADCERT_EXPIRED;
+        }
+        if ((flags & MBEDTLS_X509_BADCERT_CN_MISMATCH) && ((yContext->sslCertOptions & YSSL_NO_HOSTNAME_CHECK) || skip_cert_validation)) {
+            // allow non trusted certificate since we have no root CA installed
+            flags &= ~MBEDTLS_X509_BADCERT_CN_MISMATCH;
+        }
+        if (flags) {
+            mbedtls_x509_crt_verify_info(errmsg, YOCTO_ERRMSG_LEN,
+                "SSL:", flags);
+            //dbglog("%s", errmsg);
             return YAPI_SSL_ERROR;
         }
     }
@@ -448,7 +556,7 @@ static int do_ssl_handshake(YSSL_SOCKET yssl, char* errmsg)
 }
 
 
-static int setup_ssl(yssl_socket_st* yssl, char* errmsg)
+static int setup_ssl(yssl_socket_st* yssl, const char * remote_hostname, int skip_cert_validation, char* errmsg)
 {
     int res;
     int server_mode = yssl->flags & YSSL_TCP_SERVER_MODE;
@@ -484,7 +592,7 @@ static int setup_ssl(yssl_socket_st* yssl, char* errmsg)
         mbedtls_ssl_conf_authmode(yssl->ssl_conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
     }
 
-
+    
     // create SSL context
     yssl->ssl = yMalloc(sizeof(mbedtls_ssl_context));
     mbedtls_ssl_init(yssl->ssl);
@@ -493,11 +601,16 @@ static int setup_ssl(yssl_socket_st* yssl, char* errmsg)
         yFree(yssl->ssl);
         return FMT_MBEDTLS_ERR(res);
     }
-
+    if (remote_hostname && (res = mbedtls_ssl_set_hostname(yssl->ssl, remote_hostname)) != 0) {
+        yFree(yssl->ssl_conf);
+        yFree(yssl->ssl);
+        return FMT_MBEDTLS_ERR(res);
+    }
+    
     mbedtls_ssl_set_bio(yssl->ssl, yssl, mbedtls_ysend, mbedtls_yread, NULL);
 
     // do handshake
-    res = do_ssl_handshake(yssl, errmsg);
+    res = do_ssl_handshake(yssl, skip_cert_validation, errmsg);
     if (res < 0) {
         yFree(yssl->ssl_conf);
         yFree(yssl->ssl);
@@ -507,7 +620,7 @@ static int setup_ssl(yssl_socket_st* yssl, char* errmsg)
 }
 
 
-int yTcpOpenSSL(YSSL_SOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, char* errmsg)
+int yTcpOpenSSL(YSSL_SOCKET* newskt, const char* host, u16 port, int skip_cert_validation, u64 mstimeout, char* errmsg)
 {
     int res;
     yssl_socket_st* yssl;
@@ -516,12 +629,12 @@ int yTcpOpenSSL(YSSL_SOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, cha
     yssl = yMalloc(sizeof(yssl_socket_st));
     memset(yssl, 0, sizeof(yssl_socket_st));
 
-    res = yTcpOpenBasic(&yssl->tcpskt, ip, port, mstimeout, errmsg);
+    res = yTcpOpenBasic(&yssl->tcpskt, host, port, mstimeout, errmsg);
     if (res < 0) {
         return res;
     }
 
-    res = setup_ssl(yssl, errmsg);
+    res = setup_ssl(yssl, host, skip_cert_validation, errmsg);
     if (res < 0) {
         yFree(yssl);
         return res;
@@ -541,7 +654,7 @@ int yTcpAcceptSSL(YSSL_SOCKET* newskt, YSOCKET sock, char* errmsg)
     memset(yssl, 0, sizeof(yssl_socket_st));
     yssl->flags |= YSSL_TCP_SERVER_MODE;
     yssl->tcpskt = sock;
-    res = setup_ssl(yssl, errmsg);
+    res = setup_ssl(yssl, NULL, 0, errmsg);
     if (res < 0) {
         yFree(yssl);
         return res;

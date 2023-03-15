@@ -40,9 +40,6 @@ DEMO_AARCH64 = $(DIR_AARCH64)demo
 DEMO_OSX = $(DIR_OSX)demo
 
 
-
-
-
 ifeq ($(OS),Windows_NT)
 # WINDOWS COMPILATION
 
@@ -97,7 +94,6 @@ armel: $(DEMO_ARMEL)
 # end of hf
 endif
 
-# end of default linux comile
 endif
 
 else
@@ -123,7 +119,6 @@ release: $(RELEASE_BUILD)
 ../../Binaries/%/libyocto-static.lib:
 	@echo compiling Yoctopuce C++ lib for $*
 	@make -C ../../Binaries $*/libyocto-static.lib
-
 
 #windows rules
 $(DEMO_WIN32) : main.cpp $(YOCTO_API_DIR_WIN32)yocto-static.lib $(DIR_WIN32)
@@ -151,8 +146,6 @@ $(DEMO_AARCH64) : main.cpp $(YOCTO_API_DIR_AARCH64)libyocto-static.a $(DIR_AARCH
 #OSX rules
 $(DEMO_OSX): main.cpp $(YOCTO_API_DIR_OSX)*  $(DIR_OSX)
 	@gcc -g -I$(YOCTO_API_SRC) -o $@ main.cpp -L$(YOCTO_API_DIR_OSX) -lyocto-static -lstdc++  -framework IOKit -framework CoreFoundation
-
-
 
 codeblock:
 	codeblocks CodeBlocks/CodeBlocks_lin.cbp --build

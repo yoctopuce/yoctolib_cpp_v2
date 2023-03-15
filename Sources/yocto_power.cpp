@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_power.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_power.cpp 53431 2023-03-06 14:19:35Z seb $
  *
  *  Implements yFindPower(), the high-level API for Power functions
  *
@@ -55,6 +55,7 @@ using namespace YOCTOLIB_NAMESPACE;
 
 YPower::YPower(const string& func): YSensor(func)
 //--- (YPower initialization)
+    ,_powerFactor(POWERFACTOR_INVALID)
     ,_cosPhi(COSPHI_INVALID)
     ,_meter(METER_INVALID)
     ,_deliveredEnergyMeter(DELIVEREDENERGYMETER_INVALID)
@@ -74,6 +75,7 @@ YPower::~YPower()
 }
 //--- (YPower implementation)
 // static attributes
+const double YPower::POWERFACTOR_INVALID = YAPI_INVALID_DOUBLE;
 const double YPower::COSPHI_INVALID = YAPI_INVALID_DOUBLE;
 const double YPower::METER_INVALID = YAPI_INVALID_DOUBLE;
 const double YPower::DELIVEREDENERGYMETER_INVALID = YAPI_INVALID_DOUBLE;
@@ -81,17 +83,20 @@ const double YPower::RECEIVEDENERGYMETER_INVALID = YAPI_INVALID_DOUBLE;
 
 int YPower::_parseAttr(YJSONObject *json_val)
 {
+    if(json_val->has("powerFactor")) {
+        _powerFactor =  floor(json_val->getDouble("powerFactor") / 65.536 + 0.5) / 1000.0;
+    }
     if(json_val->has("cosPhi")) {
-        _cosPhi =  floor(json_val->getDouble("cosPhi") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _cosPhi =  floor(json_val->getDouble("cosPhi") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("meter")) {
-        _meter =  floor(json_val->getDouble("meter") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _meter =  floor(json_val->getDouble("meter") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("deliveredEnergyMeter")) {
-        _deliveredEnergyMeter =  floor(json_val->getDouble("deliveredEnergyMeter") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _deliveredEnergyMeter =  floor(json_val->getDouble("deliveredEnergyMeter") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("receivedEnergyMeter")) {
-        _receivedEnergyMeter =  floor(json_val->getDouble("receivedEnergyMeter") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _receivedEnergyMeter =  floor(json_val->getDouble("receivedEnergyMeter") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("meterTimer")) {
         _meterTimer =  json_val->getInt("meterTimer");
@@ -101,11 +106,46 @@ int YPower::_parseAttr(YJSONObject *json_val)
 
 
 /**
- * Returns the power factor (the ratio between the real power consumed,
- * measured in W, and the apparent power provided, measured in VA).
+ * Returns the power factor (PF), i.e. ratio between the active power consumed (in W)
+ * and the apparent power provided (VA).
  *
- * @return a floating point number corresponding to the power factor (the ratio between the real power consumed,
- *         measured in W, and the apparent power provided, measured in VA)
+ * @return a floating point number corresponding to the power factor (PF), i.e
+ *
+ * On failure, throws an exception or returns YPower::POWERFACTOR_INVALID.
+ */
+double YPower::get_powerFactor(void)
+{
+    double res = 0.0;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YPower::POWERFACTOR_INVALID;
+                }
+            }
+        }
+        res = _powerFactor;
+        if (res == YPower::POWERFACTOR_INVALID) {
+            res = _cosPhi;
+        }
+        res = floor(res * 1000+0.5) / 1000;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the Displacement Power factor (DPF), i.e. cosine of the phase shift between
+ * the voltage and current fundamentals.
+ * On the Yocto-Watt (V1), the value returned by this method correponds to the
+ * power factor as this device is cannot estimate the true DPF.
+ *
+ * @return a floating point number corresponding to the Displacement Power factor (DPF), i.e
  *
  * On failure, throws an exception or returns YPower::COSPHI_INVALID.
  */
@@ -137,7 +177,7 @@ int YPower::set_meter(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("meter", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -148,12 +188,14 @@ int YPower::set_meter(double newval)
 }
 
 /**
- * Returns the energy counter, maintained by the wattmeter by integrating the power consumption over time,
- * but only when positive. Note that this counter is reset at each start of the device.
+ * Returns the energy counter, maintained by the wattmeter by integrating the
+ * power consumption over time. This is the sum of forward and backwad energy transfers,
+ * if you are insterested in only one direction, use  get_receivedEnergyMeter() or
+ * get_deliveredEnergyMeter(). Note that this counter is reset at each start of the device.
  *
  * @return a floating point number corresponding to the energy counter, maintained by the wattmeter by
- * integrating the power consumption over time,
- *         but only when positive
+ * integrating the
+ *         power consumption over time
  *
  * On failure, throws an exception or returns YPower::METER_INVALID.
  */

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_messagebox.cpp 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_messagebox.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  * Implements yFindMessageBox(), the high-level API for MessageBox functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_messagebox.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "messagebox"
@@ -58,11 +59,16 @@ YSms::YSms(void):
     _mbox(NULL)
     ,_slot(0)
     ,_deliv(0)
+    ,_smsc("")
     ,_mref(0)
+    ,_orig("")
+    ,_dest("")
     ,_pid(0)
     ,_alphab(0)
     ,_mclass(0)
+    ,_stamp("")
     ,_npdu(0)
+    ,_aggSig("")
     ,_aggIdx(0)
     ,_aggCnt(0)
 //--- (end of generated code: YSms initialization)
@@ -73,11 +79,16 @@ YSms::YSms(YMessageBox *mbox) :
     _mbox(NULL)
     ,_slot(0)
     ,_deliv(0)
+    ,_smsc("")
     ,_mref(0)
+    ,_orig("")
+    ,_dest("")
     ,_pid(0)
     ,_alphab(0)
     ,_mclass(0)
+    ,_stamp("")
     ,_npdu(0)
+    ,_aggSig("")
     ,_aggIdx(0)
     ,_aggCnt(0)
 //--- (end of generated code: YSms initialization)
@@ -554,13 +565,13 @@ int YSms::set_parts(vector<YSms> parts)
         }
     }
     _parts = sorted;
-    _npdu = (int)sorted.size();
     // inherit header fields from first part
     subsms = _parts[0];
     retcode = this->parsePdu(subsms.get_pdu());
     if (retcode != YAPI_SUCCESS) {
         return retcode;
     }
+    _npdu = (int)sorted.size();
     // concatenate user data from all parts
     totsize = 0;
     partno = 0;
@@ -775,7 +786,7 @@ string YSms::encodeTimeStamp(string exp)
                 n = n - 1;
                 v2 = 4 * ((u8)res[n]) + v1;
                 if (((u8)expasc[i-3]) == 45) {
-                    v2 += 128;
+                    v2 = v2 + 128;
                 }
                 res[n] = (char)(v2);
             }
@@ -1289,7 +1300,7 @@ int YSms::deleteFromSIM(void)
     int retcode = 0;
     YSms pdu;
 
-    if (_slot > 0) {
+    if (_npdu < 2) {
         return _mbox->clearSIMSlot(_slot);
     }
     retcode = YAPI_SUCCESS;
@@ -1314,6 +1325,7 @@ YMessageBox::YMessageBox(const string& func): YFunction(func)
     ,_command(COMMAND_INVALID)
     ,_valueCallbackMessageBox(NULL)
     ,_nextMsgRef(0)
+    ,_prevBitmapStr("")
     ,_gsm2unicodeReady(0)
 //--- (end of generated code: YMessageBox initialization)
 {
@@ -1478,7 +1490,7 @@ int YMessageBox::set_pduSent(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("pduSent", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1532,7 +1544,7 @@ int YMessageBox::set_pduReceived(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("pduReceived", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1677,8 +1689,99 @@ int YMessageBox::nextMsgRef(void)
 
 int YMessageBox::clearSIMSlot(int slot)
 {
-    _prevBitmapStr = "";
-    return this->set_command(YapiWrapper::ysprintf("DS%d",slot));
+    int retry = 0;
+    int idx = 0;
+    string res;
+    string bitmapStr;
+    int int_res = 0;
+    string newBitmap;
+    int bitVal = 0;
+
+    retry = 5;
+    while (retry > 0) {
+        this->clearCache();
+        bitmapStr = this->get_slotsBitmap();
+        newBitmap = YAPI::_hexStr2Bin(bitmapStr);
+        idx = ((slot) >> (3));
+        if (idx < (int)(newBitmap).size()) {
+            bitVal = ((1) << ((((slot) & (7)))));
+            if ((((((u8)newBitmap[idx])) & (bitVal))) != 0) {
+                _prevBitmapStr = "";
+                int_res = this->set_command(YapiWrapper::ysprintf("DS%d",slot));
+                if (int_res < 0) {
+                    return int_res;
+                }
+            } else {
+                return YAPI_SUCCESS;
+            }
+        } else {
+            return YAPI_INVALID_ARGUMENT;
+        }
+        res = this->_AT("");
+        retry = retry - 1;
+    }
+    return YAPI_IO_ERROR;
+}
+
+string YMessageBox::_AT(string cmd)
+{
+    int chrPos = 0;
+    int cmdLen = 0;
+    int waitMore = 0;
+    string res;
+    string buff;
+    int bufflen = 0;
+    string buffstr;
+    int buffstrlen = 0;
+    int idx = 0;
+    int suffixlen = 0;
+    // copied form the YCellular class
+    // quote dangerous characters used in AT commands
+    cmdLen = (int)(cmd).length();
+    chrPos = _ystrpos(cmd, "#");
+    while (chrPos >= 0) {
+        cmd = YapiWrapper::ysprintf("%s%c23%s", (cmd).substr( 0, chrPos).c_str(), 37,(cmd).substr( chrPos+1, cmdLen-chrPos-1).c_str());
+        cmdLen = cmdLen + 2;
+        chrPos = _ystrpos(cmd, "#");
+    }
+    chrPos = _ystrpos(cmd, "+");
+    while (chrPos >= 0) {
+        cmd = YapiWrapper::ysprintf("%s%c2B%s", (cmd).substr( 0, chrPos).c_str(), 37,(cmd).substr( chrPos+1, cmdLen-chrPos-1).c_str());
+        cmdLen = cmdLen + 2;
+        chrPos = _ystrpos(cmd, "+");
+    }
+    chrPos = _ystrpos(cmd, "=");
+    while (chrPos >= 0) {
+        cmd = YapiWrapper::ysprintf("%s%c3D%s", (cmd).substr( 0, chrPos).c_str(), 37,(cmd).substr( chrPos+1, cmdLen-chrPos-1).c_str());
+        cmdLen = cmdLen + 2;
+        chrPos = _ystrpos(cmd, "=");
+    }
+    cmd = YapiWrapper::ysprintf("at.txt?cmd=%s",cmd.c_str());
+    res = YapiWrapper::ysprintf("");
+    // max 2 minutes (each iteration may take up to 5 seconds if waiting)
+    waitMore = 24;
+    while (waitMore > 0) {
+        buff = this->_download(cmd);
+        bufflen = (int)(buff).size();
+        buffstr = buff;
+        buffstrlen = (int)(buffstr).length();
+        idx = bufflen - 1;
+        while ((idx > 0) && (((u8)buff[idx]) != 64) && (((u8)buff[idx]) != 10) && (((u8)buff[idx]) != 13)) {
+            idx = idx - 1;
+        }
+        if (((u8)buff[idx]) == 64) {
+            // continuation detected
+            suffixlen = bufflen - idx;
+            cmd = YapiWrapper::ysprintf("at.txt?cmd=%s",(buffstr).substr( buffstrlen - suffixlen, suffixlen).c_str());
+            buffstr = (buffstr).substr( 0, buffstrlen - suffixlen);
+            waitMore = waitMore - 1;
+        } else {
+            // request complete
+            waitMore = 0;
+        }
+        res = YapiWrapper::ysprintf("%s%s", res.c_str(),buffstr.c_str());
+    }
+    return res;
 }
 
 YSms YMessageBox::fetchPdu(int slot)

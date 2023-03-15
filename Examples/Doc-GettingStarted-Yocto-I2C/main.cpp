@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: main.cpp 44664 2021-04-23 09:45:05Z seb $
+ *  $Id: main.cpp 52593 2023-01-03 15:21:36Z seb $
  *
  *  An example that show how to use a  Yocto-I2C
  *
@@ -64,7 +64,7 @@ int main(int argc, const char * argv[])
   }
 
   // sample code reading MCP9804 temperature sensor
-  i2cPort->set_i2cMode("400kbps");
+  i2cPort->set_i2cMode("100kbps");
   i2cPort->set_i2cVoltageLevel(YI2cPort::I2CVOLTAGELEVEL_3V3);
   i2cPort->reset();
   // do not forget to configure the powerOutput and

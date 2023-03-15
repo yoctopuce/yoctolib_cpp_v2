@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_spiport.h 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_spiport.h 53034 2023-02-02 10:16:55Z seb $
  *
  *  Declares yFindSpiPort(), the high-level API for SpiPort functions
  *
@@ -70,6 +70,7 @@ typedef enum {
     Y_VOLTAGELEVEL_RS232 = 5,
     Y_VOLTAGELEVEL_RS485 = 6,
     Y_VOLTAGELEVEL_TTL1V8 = 7,
+    Y_VOLTAGELEVEL_SDI12 = 8,
     Y_VOLTAGELEVEL_INVALID = -1,
 } Y_VOLTAGELEVEL_enum;
 #endif
@@ -202,6 +203,7 @@ protected:
     int             _rxptr;
     string          _rxbuff;
     int             _rxbuffptr;
+    int             _eventPos;
 
     friend YSpiPort *yFindSpiPort(const string& func);
     friend YSpiPort *yFirstSpiPort(void);
@@ -237,6 +239,7 @@ public:
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_RS232 = Y_VOLTAGELEVEL_RS232;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_RS485 = Y_VOLTAGELEVEL_RS485;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_TTL1V8 = Y_VOLTAGELEVEL_TTL1V8;
+    static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_SDI12 = Y_VOLTAGELEVEL_SDI12;
     static const Y_VOLTAGELEVEL_enum VOLTAGELEVEL_INVALID = Y_VOLTAGELEVEL_INVALID;
     static const string SPIMODE_INVALID;
     static const Y_SSPOLARITY_enum SSPOLARITY_ACTIVE_LOW = Y_SSPOLARITY_ACTIVE_LOW;
@@ -446,8 +449,8 @@ public:
      *
      * @return a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
      * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
-     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage level used on the serial line
+     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485, YSpiPort::VOLTAGELEVEL_TTL1V8 and
+     * YSpiPort::VOLTAGELEVEL_SDI12 corresponding to the voltage level used on the serial line
      *
      * On failure, throws an exception or returns YSpiPort::VOLTAGELEVEL_INVALID.
      */
@@ -467,8 +470,8 @@ public:
      *
      * @param newval : a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
      * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
-     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
-     * corresponding to the voltage type used on the serial line
+     * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485, YSpiPort::VOLTAGELEVEL_TTL1V8 and
+     * YSpiPort::VOLTAGELEVEL_SDI12 corresponding to the voltage type used on the serial line
      *
      * @return YAPI::SUCCESS if the call succeeds.
      *
@@ -682,6 +685,8 @@ public:
      * @return the number of bytes available to read
      */
     virtual int         read_avail(void);
+
+    virtual int         end_tell(void);
 
     /**
      * Sends a text line query to the serial port, and reads the reply, if any.

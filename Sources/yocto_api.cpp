@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_api.cpp 45306 2021-05-26 08:04:16Z web $
+ * $Id: yocto_api.cpp 53388 2023-03-03 10:16:34Z seb $
  *
  * High-level programming interface, common to all modules
  *
@@ -48,6 +48,12 @@
 #else
 #include <unistd.h>
 #define yySleep(ms)          usleep(ms*1000)
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#define yyisnan(x)           _isnan(x)
+#else
+#define yyisnan(x)           std::isnan(x)
 #endif
 
 #include <string.h>
@@ -213,11 +219,11 @@ string YJSONContent::FormatError(const string& errmsg, int cur_pos)
 }
 
 
-YJSONArray::YJSONArray(const string& data, int start, int stop) : YJSONContent(data, start, stop, ARRAY)
+YJSONArray::YJSONArray(const string& data, int start, int stop) : YJSONContent(data, start, stop, YARRAY)
 { }
 
 
-YJSONArray::YJSONArray() : YJSONContent(ARRAY)
+YJSONArray::YJSONArray() : YJSONContent(YARRAY)
 { }
 
 YJSONArray::YJSONArray(YJSONArray* ref) : YJSONContent(ref)
@@ -225,22 +231,22 @@ YJSONArray::YJSONArray(YJSONArray* ref) : YJSONContent(ref)
     for (unsigned i = 0; i < ref->_arrayValue.size(); i++) {
         YJSONType type = ref->_arrayValue[i]->getJSONType();
         switch (type) {
-        case ARRAY: {
+        case YARRAY: {
             YJSONArray* tmp = new YJSONArray((YJSONArray*)ref->_arrayValue[i]);
             _arrayValue.push_back(tmp);
         }
         break;
-        case NUMBER: {
+        case YNUMBER: {
             YJSONNumber* tmp = new YJSONNumber((YJSONNumber*)ref->_arrayValue[i]);
             _arrayValue.push_back(tmp);
         }
         break;
-        case STRING: {
+        case YSTRING: {
             YJSONString* tmp = new YJSONString((YJSONString*)ref->_arrayValue[i]);
             _arrayValue.push_back(tmp);
         }
         break;
-        case OBJECT: {
+        case YOBJECT: {
             YJSONObject* tmp = new YJSONObject((YJSONObject*)ref->_arrayValue[i]);
             _arrayValue.push_back(tmp);
         }
@@ -409,10 +415,10 @@ string YJSONArray::toString()
 }
 
 
-YJSONString::YJSONString(const string& data, int start, int stop) : YJSONContent(data, start, stop, STRING)
+YJSONString::YJSONString(const string& data, int start, int stop) : YJSONContent(data, start, stop, YSTRING)
 { }
 
-YJSONString::YJSONString() : YJSONContent(STRING)
+YJSONString::YJSONString() : YJSONContent(YSTRING)
 { }
 
 YJSONString::YJSONString(YJSONString* ref) : YJSONContent(ref)
@@ -518,7 +524,7 @@ void YJSONString::setContent(const string& value)
 }
 
 
-YJSONNumber::YJSONNumber(const string& data, int start, int stop) : YJSONContent(data, start, stop, NUMBER), _intValue(0), _doubleValue(0), _isFloat(false)
+YJSONNumber::YJSONNumber(const string& data, int start, int stop) : YJSONContent(data, start, stop, YNUMBER), _intValue(0), _doubleValue(0), _isFloat(false)
 { }
 
 YJSONNumber::YJSONNumber(YJSONNumber* ref) : YJSONContent(ref)
@@ -606,10 +612,10 @@ string YJSONNumber::toString()
 }
 
 
-YJSONObject::YJSONObject(const string& data) : YJSONContent(data, 0, (int)data.length(), OBJECT)
+YJSONObject::YJSONObject(const string& data) : YJSONContent(data, 0, (int)data.length(), YOBJECT)
 { }
 
-YJSONObject::YJSONObject(const string& data, int start, int len) : YJSONContent(data, start, len, OBJECT)
+YJSONObject::YJSONObject(const string& data, int start, int len) : YJSONContent(data, start, len, YOBJECT)
 { }
 
 YJSONObject::YJSONObject(YJSONObject* ref) : YJSONContent(ref)
@@ -619,16 +625,16 @@ YJSONObject::YJSONObject(YJSONObject* ref) : YJSONContent(ref)
         _keys.push_back(key);
         YJSONType type = ref->_parsed[key]->getJSONType();
         switch (type) {
-        case ARRAY:
+        case YARRAY:
             _parsed[key] = new YJSONArray((YJSONArray*)ref->_parsed[key]);
             break;
-        case NUMBER:
+        case YNUMBER:
             _parsed[key] = new YJSONNumber((YJSONNumber*)ref->_parsed[key]);
             break;
-        case STRING:
+        case YSTRING:
             _parsed[key] = new YJSONString((YJSONString*)ref->_parsed[key]);
             break;
-        case OBJECT:
+        case YOBJECT:
             _parsed[key] = new YJSONObject((YJSONObject*)ref->_parsed[key]);
             break;
         }
@@ -887,21 +893,21 @@ void YJSONObject::convert(YJSONObject* reference, YJSONArray* newArray)
         YJSONType type = item->getJSONType();
         if (type == reference_item->getJSONType()) {
             switch (type) {
-            case ARRAY:
+            case YARRAY:
                 _parsed[key] = new YJSONArray((YJSONArray*)item);
                 break;
-            case NUMBER:
+            case YNUMBER:
                 _parsed[key] = new YJSONNumber((YJSONNumber*)item);
                 break;
-            case STRING:
+            case YSTRING:
                 _parsed[key] = new YJSONString((YJSONString*)item);
                 break;
-            case OBJECT:
+            case YOBJECT:
                 _parsed[key] = new YJSONObject((YJSONObject*)item);
                 break;
             }
             _keys.push_back(key);
-        } else if (type == ARRAY && reference_item->getJSONType() == OBJECT) {
+        } else if (type == YARRAY && reference_item->getJSONType() == YOBJECT) {
             YJSONObject* jobj = new YJSONObject(item->_data, item->_data_start, reference_item->_data_boundary);
             jobj->convert((YJSONObject*)reference_item, (YJSONArray*)item);
             _parsed[key] = jobj;
@@ -936,6 +942,7 @@ YDataStream::YDataStream(YFunction* parent):
     ,_avgVal(0.0)
     ,_maxVal(0.0)
     ,_caltyp(0)
+    ,_isLoaded(0)
 //--- (end of generated code: YDataStream initialization)
 {
     _parent = parent;
@@ -960,6 +967,7 @@ YDataStream::YDataStream(YFunction* parent, YDataSet& dataset, const vector<int>
     ,_avgVal(0.0)
     ,_maxVal(0.0)
     ,_caltyp(0)
+    ,_isLoaded(0)
 //--- (end of generated code: YDataStream initialization)
 {
     _parent = parent;
@@ -980,6 +988,7 @@ YDataStream::~YDataStream()
 YDataSet::YDataSet(YFunction* parent, const string& functionId, const string& unit, double startTime, double endTime):
     //--- (generated code: YDataSet initialization)
     _parent(NULL)
+    ,_bulkLoad(0)
     ,_startTimeMs(0.0)
     ,_endTimeMs(0.0)
     ,_progress(0)
@@ -1002,6 +1011,7 @@ YDataSet::YDataSet(YFunction* parent, const string& functionId, const string& un
 YDataSet::YDataSet(YFunction* parent):
     //--- (generated code: YDataSet initialization)
     _parent(NULL)
+    ,_bulkLoad(0)
     ,_startTimeMs(0.0)
     ,_endTimeMs(0.0)
     ,_progress(0)
@@ -1040,6 +1050,11 @@ int YDataSet::_parse(const string& json)
                 return YAPI_NOT_SUPPORTED;
             }
             _unit = _parent->_parseString(j);
+        } else if (!strcmp(j.token, "bulk")) {
+            if (yJsonParse(&j) != YJSON_PARSE_AVAIL) {
+                return YAPI_NOT_SUPPORTED;
+            }
+            _bulkLoad = atoi(_parent->_parseString(j).c_str());
         } else if (!strcmp(j.token, "calib")) {
             if (yJsonParse(&j) != YJSON_PARSE_AVAIL) {
                 return YAPI_NOT_SUPPORTED;
@@ -1378,9 +1393,7 @@ int YFirmwareUpdate::_processMore(int newupdate)
 }
 
 /**
- * Returns a list of all the modules in "firmware update" mode. Only devices
- * connected over USB are listed. For devices connected to a YoctoHub, you
- * must connect yourself to the YoctoHub web interface.
+ * Returns a list of all the modules in "firmware update" mode.
  *
  * @return an array of strings containing the serial numbers of devices in "firmware update" mode.
  */
@@ -1630,6 +1643,9 @@ int YDataStream::_parseStream(string sdata)
     int idx = 0;
     vector<int> udat;
     vector<double> dat;
+    if (_isLoaded && !(_isClosed)) {
+        return YAPI_SUCCESS;
+    }
     if ((int)(sdata).size() == 0) {
         _nRows = 0;
         return YAPI_SUCCESS;
@@ -1641,23 +1657,39 @@ int YDataStream::_parseStream(string sdata)
     if (_isAvg) {
         while (idx + 3 < (int)udat.size()) {
             dat.clear();
-            dat.push_back(this->_decodeVal(udat[idx + 2] + (((udat[idx + 3]) << (16)))));
-            dat.push_back(this->_decodeAvg(udat[idx] + (((((udat[idx + 1]) ^ (0x8000))) << (16))), 1));
-            dat.push_back(this->_decodeVal(udat[idx + 4] + (((udat[idx + 5]) << (16)))));
+            if ((udat[idx] == 65535) && (udat[idx + 1] == 65535)) {
+                dat.push_back(NAN);
+                dat.push_back(NAN);
+                dat.push_back(NAN);
+            } else {
+                dat.push_back(this->_decodeVal(udat[idx + 2] + (((udat[idx + 3]) << (16)))));
+                dat.push_back(this->_decodeAvg(udat[idx] + (((((udat[idx + 1]) ^ (0x8000))) << (16))), 1));
+                dat.push_back(this->_decodeVal(udat[idx + 4] + (((udat[idx + 5]) << (16)))));
+            }
             idx = idx + 6;
             _values.push_back(dat);
         }
     } else {
         while (idx + 1 < (int)udat.size()) {
             dat.clear();
-            dat.push_back(this->_decodeAvg(udat[idx] + (((((udat[idx + 1]) ^ (0x8000))) << (16))), 1));
+            if ((udat[idx] == 65535) && (udat[idx + 1] == 65535)) {
+                dat.push_back(NAN);
+            } else {
+                dat.push_back(this->_decodeAvg(udat[idx] + (((((udat[idx + 1]) ^ (0x8000))) << (16))), 1));
+            }
             _values.push_back(dat);
             idx = idx + 2;
         }
     }
 
     _nRows = (int)_values.size();
+    _isLoaded = true;
     return YAPI_SUCCESS;
+}
+
+bool YDataStream::_wasLoaded(void)
+{
+    return _isLoaded;
 }
 
 string YDataStream::_get_url(void)
@@ -1665,6 +1697,21 @@ string YDataStream::_get_url(void)
     string url;
     url = YapiWrapper::ysprintf("logger.json?id=%s&run=%d&utc=%u",
     _functionId.c_str(),_runNo,_utcStamp);
+    return url;
+}
+
+string YDataStream::_get_baseurl(void)
+{
+    string url;
+    url = YapiWrapper::ysprintf("logger.json?id=%s&run=%d&utc=",
+    _functionId.c_str(),_runNo);
+    return url;
+}
+
+string YDataStream::_get_urlsuffix(void)
+{
+    string url;
+    url = YapiWrapper::ysprintf("%u",_utcStamp);
     return url;
 }
 
@@ -2160,9 +2207,11 @@ int YDataSet::loadSummary(string data)
         } else {
             // stream that are partially in the dataset
             // we need to parse data to filter value outside the dataset
-            url =  _streams[ii]->_get_url();
-            data = _parent->_download(url);
-            _streams[ii]->_parseStream(data);
+            if (!( _streams[ii]->_wasLoaded())) {
+                url =  _streams[ii]->_get_url();
+                data = _parent->_download(url);
+                _streams[ii]->_parseStream(data);
+            }
             dataRows =  _streams[ii]->get_dataRows();
             if ((int)dataRows.size() == 0) {
                 return this->get_progress();
@@ -2213,8 +2262,10 @@ int YDataSet::loadSummary(string data)
                     if (previewMaxVal < maxVal) {
                         previewMaxVal = maxVal;
                     }
-                    previewTotalAvg = previewTotalAvg + (avgVal * mitv);
-                    previewTotalTime = previewTotalTime + mitv;
+                    if (!(yyisnan(avgVal))) {
+                        previewTotalAvg = previewTotalAvg + (avgVal * mitv);
+                        previewTotalTime = previewTotalTime + mitv;
+                    }
                 }
                 tim = end_;
                 m_pos = m_pos + 1;
@@ -2264,12 +2315,22 @@ int YDataSet::processMore(int progress,string data)
     double tim = 0.0;
     double itv = 0.0;
     double fitv = 0.0;
+    double avgv = 0.0;
     double end_ = 0.0;
     int nCols = 0;
     int minCol = 0;
     int avgCol = 0;
     int maxCol = 0;
     bool firstMeasure = 0;
+    string baseurl;
+    string url;
+    string suffix;
+    vector<string> suffixes;
+    int idx = 0;
+    string bulkFile;
+    vector<string> streamStr;
+    int urlIdx = 0;
+    string streamBin;
 
     if (progress != _progress) {
         return _progress;
@@ -2278,7 +2339,9 @@ int YDataSet::processMore(int progress,string data)
         return this->loadSummary(data);
     }
     stream = _streams[_progress];
-    stream->_parseStream(data);
+    if (!(stream->_wasLoaded())) {
+        stream->_parseStream(data);
+    }
     dataRows = stream->get_dataRows();
     _progress = _progress + 1;
     if ((int)dataRows.size() == 0) {
@@ -2314,12 +2377,47 @@ int YDataSet::processMore(int progress,string data)
         } else {
             end_ = tim + itv;
         }
-        if ((end_ > _startTimeMs) && ((_endTimeMs == 0) || (tim < _endTimeMs))) {
+        avgv = dataRows[ii][avgCol];
+        if ((end_ > _startTimeMs) && ((_endTimeMs == 0) || (tim < _endTimeMs)) && !(yyisnan(avgv))) {
             _measures.push_back(YMeasure(tim / 1000, end_ / 1000,
             dataRows[ii][minCol],
-            dataRows[ii][avgCol],dataRows[ii][maxCol]));
+            avgv,dataRows[ii][maxCol]));
         }
         tim = end_;
+    }
+    // Perform bulk preload to speed-up network transfer
+    if ((_bulkLoad > 0) && (_progress < (int)_streams.size())) {
+        stream = _streams[_progress];
+        if (stream->_wasLoaded()) {
+            return this->get_progress();
+        }
+        baseurl = stream->_get_baseurl();
+        url = stream->_get_url();
+        suffix = stream->_get_urlsuffix();
+        suffixes.push_back(suffix);
+        idx = _progress+1;
+        while ((idx < (int)_streams.size()) && ((int)suffixes.size() < _bulkLoad)) {
+            stream = _streams[idx];
+            if (!(stream->_wasLoaded()) && (stream->_get_baseurl() == baseurl)) {
+                suffix = stream->_get_urlsuffix();
+                suffixes.push_back(suffix);
+                url = url + "," + suffix;
+            }
+            idx = idx + 1;
+        }
+        bulkFile = _parent->_download(url);
+        streamStr = _parent->_json_get_array(bulkFile);
+        urlIdx = 0;
+        idx = _progress;
+        while ((idx < (int)_streams.size()) && (urlIdx < (int)suffixes.size()) && (urlIdx < (int)streamStr.size())) {
+            stream = _streams[idx];
+            if ((stream->_get_baseurl() == baseurl) && (stream->_get_urlsuffix() == suffixes[urlIdx])) {
+                streamBin = streamStr[urlIdx];
+                stream->_parseStream(streamBin);
+                urlIdx = urlIdx + 1;
+            }
+            idx = idx + 1;
+        }
     }
     return this->get_progress();
 }
@@ -2444,7 +2542,7 @@ int YDataSet::get_progress(void)
 }
 
 /**
- * Loads the the next block of measures from the dataLogger, and updates
+ * Loads the next block of measures from the dataLogger, and updates
  * the progress indicator.
  *
  * @return an integer in the range 0 to 100 (percentage of completion),
@@ -2469,6 +2567,10 @@ int YDataSet::loadMore(void)
             return 100;
         } else {
             stream = _streams[_progress];
+            if (stream->_wasLoaded()) {
+                // Do not reload stream if it was already loaded
+                return this->processMore(_progress, "");
+            }
             url = stream->_get_url();
         }
     }
@@ -2699,6 +2801,94 @@ string YAPIContext::AddUdevRule(bool force)
         msg = "";
     }
     return msg;
+}
+
+/**
+ * Download the TLS/SSL certificate from the hub. This function allows to download a TLS/SSL certificate to add it
+ * to the list of trusted certificates using the AddTrustedCertificates method.
+ *
+ * @param url : the root URL of the VirtualHub V2 or HTTP server.
+ * @param mstimeout : the number of milliseconds available to download the certificate.
+ *
+ * @return a string containing the certificate. In case of error, returns a string starting with "error:".
+ */
+string YAPIContext::DownloadHostCertificate(string url,u64 mstimeout)
+{
+    char errmsg[YOCTO_ERRMSG_LEN];
+    char smallbuff[4096];
+    char *bigbuff;
+    int buffsize = 0;
+    int fullsize = 0;
+    int res = 0;
+    string certifcate;
+    fullsize = 0;
+    res = yapiGetRemoteCertificate(url.c_str(), mstimeout, smallbuff, 4096, &fullsize, errmsg);
+    if (res < 0) {
+        if (res == YAPI_BUFFER_TOO_SMALL) {
+            fullsize = fullsize * 2;
+            buffsize = fullsize;
+            bigbuff = (char *)malloc(buffsize);
+            res = yapiGetRemoteCertificate(url.c_str(), mstimeout, bigbuff, buffsize, &fullsize, errmsg);
+            if (res < 0) {
+                certifcate = "error:" + string(errmsg);
+            } else {
+                certifcate = string(bigbuff, fullsize);
+            }
+            free(bigbuff);
+        } else {
+            certifcate = "error:" + string(errmsg);
+        }
+        return certifcate;
+    } else {
+        certifcate = string(smallbuff, fullsize);
+    }
+    return certifcate;
+}
+
+/**
+ * Adds a TLS/SSL certificate to the list of trusted certificates. By default, the library
+ * library will reject TLS/SSL connections to servers whose certificate is not known. This function
+ * function allows to add a list of known certificates. It is also possible to disable the verification
+ * using the SetNetworkSecurityOptions method.
+ *
+ * @param certificate : a string containing one or more certificates.
+ *
+ * @return an empty string if the certificate has been added correctly.
+ *         In case of error, returns a string starting with "error:".
+ */
+string YAPIContext::AddTrustedCertificates(string certificate)
+{
+    char errmsg[YOCTO_ERRMSG_LEN];
+    int size = 0;
+    int res = 0;
+    size = (int)(certificate).length();
+    res = yapiAddSSLCertificateCli(certificate.c_str(), size, errmsg);
+    if (res < 0) {
+        return string(errmsg);
+    } else {
+        return "";
+    }
+}
+
+/**
+ * Enables or disables certain TLS/SSSL certificate checks.
+ *
+ * @param options: The options: YAPIContext::ALL_CHECK, YAPIContext::NO_TRUSTED_CA_CHECK,
+ *         YAPIContext::NO_EXPIRATION_CHECK, YAPIContext::NO_HOSTNAME_CHECK.
+ *
+ * @return an empty string if the options are taken into account.
+ *         On error, returns a string beginning with "error:".
+ */
+string YAPIContext::SetNetworkSecurityOptions(int options)
+{
+    char errmsg[YOCTO_ERRMSG_LEN];
+    int res = 0;
+    res = yapiSetNetworkSecurityOptions(options, errmsg);
+    if (res < 0) {
+        return string(errmsg);
+    } else {
+        return "";
+    }
 }
 
 /**
@@ -3317,21 +3507,22 @@ vector<string> YFunction::_json_get_array(const string& json)
     j.src = json_cstr = json.c_str();
     j.end = j.src + strlen(j.src);
     j.st = YJSON_START;
-    if (yJsonParse(&j) != YJSON_PARSE_AVAIL || j.st != YJSON_PARSE_ARRAY) {
-        this->_throw(YAPI_IO_ERROR, "JSON structure expected");
+    int parse_res = yJsonParse(&j);
+    if (parse_res != YJSON_PARSE_AVAIL || j.st != YJSON_PARSE_ARRAY) {
+        this->_throw(YAPI_IO_ERROR, "JSON array expected");
         return res;
     }
     int depth = j.depth;
     do {
         last = j.src;
-        while (yJsonParse(&j) == YJSON_PARSE_AVAIL) {
+        while ((parse_res=yJsonParse(&j)) == YJSON_PARSE_AVAIL) {
             if (j.next == YJSON_PARSE_STRINGCONT || j.depth > depth) {
                 continue;
             }
             break;
         }
         if (j.st == YJSON_PARSE_ERROR) {
-            this->_throw(YAPI_IO_ERROR, "invalid JSON structure");
+            this->_throw(YAPI_IO_ERROR, "invalid JSON array");
             return res;
         }
 
@@ -3345,7 +3536,11 @@ vector<string> YFunction::_json_get_array(const string& json)
             string item = json.substr(location, length);
             res.push_back(item);
         }
-    } while (j.st != YJSON_PARSE_ARRAY);
+    } while (parse_res == YJSON_PARSE_AVAIL && j.st != YJSON_PARSE_ARRAY);
+    if (j.st != YJSON_PARSE_ARRAY) {
+        this->_throw(YAPI_IO_ERROR, "missing closing tag in JSON array");
+        return res;
+    }
     return res;
 }
 
@@ -3967,6 +4162,11 @@ YModule *YFunction::get_module(void)
     string errmsg, serial, funcId, funcName, funcValue;
 
     yEnterCriticalSection(&_this_cs);
+    if (_serial != "") {
+        serial = _serial;
+        yLeaveCriticalSection(&_this_cs);
+        return yFindModule(serial + ".module");
+    }
     fundescr = YapiWrapper::getFunction(_className, _func, errmsg);
     if (!YISERR(fundescr)) {
         if (!YISERR(YapiWrapper::getFunctionInfo(fundescr, devdescr, serial, funcId, funcName, funcValue, errmsg))) {
@@ -4273,34 +4473,34 @@ YRETCODE YDevice::requestAPI(YJSONObject*& apires, string& errmsg)
     j.st = YJSON_HTTP_START;
     if (yJsonParse(&j) != YJSON_PARSE_AVAIL || j.st != YJSON_HTTP_READ_CODE) {
         errmsg = "Failed to parse HTTP header";
+        yLeaveCriticalSection(&_lock);
         if (!YAPI::ExceptionsDisabled) {
             throw YAPI_Exception(YAPI_IO_ERROR, errmsg);
         }
-        yLeaveCriticalSection(&_lock);
         return YAPI_IO_ERROR;
     }
     if (string(j.token) != "200") {
         errmsg = string("Unexpected HTTP return code: ") + j.token;
+        yLeaveCriticalSection(&_lock);
         if (!YAPI::ExceptionsDisabled) {
             throw YAPI_Exception(YAPI_IO_ERROR, errmsg);
         }
-        yLeaveCriticalSection(&_lock);
         return YAPI_IO_ERROR;
     }
     if (yJsonParse(&j) != YJSON_PARSE_AVAIL || j.st != YJSON_HTTP_READ_MSG) {
         errmsg = "Unexpected HTTP header format";
+        yLeaveCriticalSection(&_lock);
         if (!YAPI::ExceptionsDisabled) {
             throw YAPI_Exception(YAPI_IO_ERROR, errmsg);
         }
-        yLeaveCriticalSection(&_lock);
         return YAPI_IO_ERROR;
     }
     if (yJsonParse(&j) != YJSON_PARSE_AVAIL || (j.st != YJSON_PARSE_STRUCT && j.st != YJSON_PARSE_ARRAY)) {
         errmsg = "Unexpected JSON reply format";
+        yLeaveCriticalSection(&_lock);
         if (!YAPI::ExceptionsDisabled) {
             throw YAPI_Exception(YAPI_IO_ERROR, errmsg);
         }
-        yLeaveCriticalSection(&_lock);
         return YAPI_IO_ERROR;
     }
     // we know for sure that the last character parsed was a '{' or '['
@@ -4746,13 +4946,17 @@ string YAPI::_hexStr2Bin(const string& hex_str)
 
 s64 YAPI::_hexStr2Long(const string& hex_str)
 {
-    size_t len = hex_str.length() / 2;
+    size_t len = hex_str.length();
     const char* p = hex_str.c_str();
     s64 res = 0;
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i+=2) {
         u8 b = 0;
         int j;
-        for (j = 0; j < 2; j++) {
+        int nbdigit = 2;
+        if ((len-i) < 2) {
+            nbdigit = (int)(len - i);
+        }
+        for (j = 0; j < nbdigit; j++) {
             b <<= 4;
             if (*p >= 'a' && *p <= 'f') {
                 b += 10 + *p - 'a';
@@ -4763,7 +4967,7 @@ s64 YAPI::_hexStr2Long(const string& hex_str)
             }
             p++;
         }
-        res = res*16 + b;
+        res = (res << 8) + b;
     }
     return res;
 }
@@ -5078,7 +5282,8 @@ YRETCODE YAPI::TestHub(const string& url, int mstimeout, string& errmsg)
 
 
 /**
- * Setup the Yoctopuce library to use modules connected on a given machine. The
+ * Setup the Yoctopuce library to use modules connected on a given machine. Idealy this
+ * call will be made once at the begining of your application.  The
  * parameter will determine how the API will work. Use the following values:
  *
  * <b>usb</b>: When the usb keyword is used, the API will work with
@@ -5088,9 +5293,15 @@ YRETCODE YAPI::TestHub(const string& url, int mstimeout, string& errmsg)
  *
  * <b><i>x.x.x.x</i></b> or <b><i>hostname</i></b>: The API will use the devices connected to the
  * host with the given IP address or hostname. That host can be a regular computer
- * running a VirtualHub, or a networked YoctoHub such as YoctoHub-Ethernet or
+ * running a <i>native VirtualHub</i>, a <i>VirtualHub for web</i> hosted on a server,
+ * or a networked YoctoHub such as YoctoHub-Ethernet or
  * YoctoHub-Wireless. If you want to use the VirtualHub running on you local
- * computer, use the IP address 127.0.0.1.
+ * computer, use the IP address 127.0.0.1. If the given IP is unresponsive, yRegisterHub
+ * will not return until a time-out defined by ySetNetworkTimeout has elapsed.
+ * However, it is possible to preventively test a connection  with yTestHub.
+ * If you cannot afford a network time-out, you can use the non blocking yPregisterHub
+ * function that will establish the connection as soon as it is available.
+ *
  *
  * <b>callback</b>: that keyword make the API run in "<i>HTTP Callback</i>" mode.
  * This a special mode allowing to take control of Yoctopuce devices
@@ -5111,7 +5322,9 @@ YRETCODE YAPI::TestHub(const string& url, int mstimeout, string& errmsg)
  *
  * http://username:password@address:port
  *
- * You can call <i>RegisterHub</i> several times to connect to several machines.
+ * You can call <i>RegisterHub</i> several times to connect to several machines. On
+ * the other hand, it is useless and even counterproductive to call <i>RegisterHub</i>
+ * with to same address multiple times during the life of the application.
  *
  * @param url : a string containing either "usb","callback" or the
  *         root URL of the hub to monitor
@@ -5140,7 +5353,8 @@ YRETCODE YAPI::RegisterHub(const string& url, string& errmsg)
  * Fault-tolerant alternative to yRegisterHub(). This function has the same
  * purpose and same arguments as yRegisterHub(), but does not trigger
  * an error when the selected hub is not available at the time of the function call.
- * This makes it possible to register a network hub independently of the current
+ * If the connexion cannot be established immediately, a background task will automatically
+ * perform periodic retries. This makes it possible to register a network hub independently of the current
  * connectivity, and to try to contact it only when a device is actively needed.
  *
  * @param url : a string containing either "usb","callback" or the
@@ -5270,6 +5484,11 @@ YRETCODE YAPI::UpdateDeviceList(string& errmsg)
 YRETCODE YAPI::HandleEvents(string& errmsg)
 {
     YRETCODE res;
+
+    if (!YAPI::_apiInitialized) {
+        YRETCODE res = YAPI::InitAPI(0, errmsg);
+        if (YISERR(res)) return res;
+    }
 
     // prevent reentrance into this function
     yEnterCriticalSection(&_handleEvent_CS);
@@ -5908,7 +6127,7 @@ int YModule::set_persistentSettings(Y_PERSISTENTSETTINGS_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("persistentSettings", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -5965,7 +6184,7 @@ int YModule::set_luminosity(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("luminosity", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -6124,7 +6343,7 @@ int YModule::set_rebootCountdown(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("rebootCountdown", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -6181,7 +6400,7 @@ int YModule::set_userVar(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("userVar", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -7357,6 +7576,26 @@ int YModule::set_allSettings(string settings)
 }
 
 /**
+ * Adds a file to the uploaded data at the next HTTP callback.
+ * This function only affects the next HTTP callback and only works in
+ * HTTP callback mode.
+ *
+ * @param filename : the name of the file to upload at the next HTTP callback
+ *
+ * @return nothing.
+ */
+int YModule::addFileToHTTPCallback(string filename)
+{
+    string content;
+
+    content = this->_download("@YCB+" + filename);
+    if ((int)(content).size() == 0) {
+        return YAPI_NOT_SUPPORTED;
+    }
+    return YAPI_SUCCESS;
+}
+
+/**
  * Returns the unique hardware identifier of the module.
  * The unique hardware identifier is made of the device serial
  * number followed by string ".module".
@@ -7807,16 +8046,16 @@ int YSensor::_parseAttr(YJSONObject *json_val)
         _unit =  json_val->getString("unit");
     }
     if(json_val->has("currentValue")) {
-        _currentValue =  floor(json_val->getDouble("currentValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _currentValue =  floor(json_val->getDouble("currentValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("lowestValue")) {
-        _lowestValue =  floor(json_val->getDouble("lowestValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _lowestValue =  floor(json_val->getDouble("lowestValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("highestValue")) {
-        _highestValue =  floor(json_val->getDouble("highestValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _highestValue =  floor(json_val->getDouble("highestValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("currentRawValue")) {
-        _currentRawValue =  floor(json_val->getDouble("currentRawValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _currentRawValue =  floor(json_val->getDouble("currentRawValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("logFrequency")) {
         _logFrequency =  json_val->getString("logFrequency");
@@ -7831,7 +8070,7 @@ int YSensor::_parseAttr(YJSONObject *json_val)
         _calibrationParam =  json_val->getString("calibrationParam");
     }
     if(json_val->has("resolution")) {
-        _resolution =  floor(json_val->getDouble("resolution") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _resolution =  floor(json_val->getDouble("resolution") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("sensorState")) {
         _sensorState =  json_val->getInt("sensorState");
@@ -7927,7 +8166,7 @@ int YSensor::set_lowestValue(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("lowestValue", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -7985,7 +8224,7 @@ int YSensor::set_highestValue(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("highestValue", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -8234,7 +8473,7 @@ int YSensor::set_advMode(Y_ADVMODE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("advMode", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -8299,7 +8538,7 @@ int YSensor::set_resolution(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("resolution", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -9055,9 +9294,9 @@ int YDataLogger::getData(unsigned runIdx, unsigned timeIdx, string& buffer, yJso
     }
     if (timeIdx) {
         // used by old datalogger only
-        sprintf(query, "GET %s?run=%u&time=%u \r\n\r\n", this->dataLoggerURL.c_str(), runIdx, timeIdx);
+        SAFE_SPRINTF(query, 128, "GET %s?run=%u&time=%u \r\n\r\n", this->dataLoggerURL.c_str(), runIdx, timeIdx);
     } else {
-        sprintf(query, "GET %s \r\n\r\n", this->dataLoggerURL.c_str());
+        SAFE_SPRINTF(query, 128, "GET %s \r\n\r\n", this->dataLoggerURL.c_str());
     }
     res = dev->HTTPRequest(0, query, buffer, NULL, NULL, errmsg);
     if (YISERR(res)) {
@@ -9222,7 +9461,7 @@ int YDataLogger::set_timeUTC(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("timeUTC", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -9279,7 +9518,7 @@ int YDataLogger::set_recording(Y_RECORDING_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("recording", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -9498,7 +9737,7 @@ int YDataLogger::set_clearHistory(Y_CLEARHISTORY_enum newval)
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the data logger, for instance
- *         RX420MA1.dataLogger.
+ *         LIGHTMK4.dataLogger.
  *
  * @return a YDataLogger object allowing you to drive the data logger.
  */

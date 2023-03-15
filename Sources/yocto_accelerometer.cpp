@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_accelerometer.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_accelerometer.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindAccelerometer(), the high-level API for Accelerometer functions
  *
@@ -84,13 +84,13 @@ int YAccelerometer::_parseAttr(YJSONObject *json_val)
         _bandwidth =  json_val->getInt("bandwidth");
     }
     if(json_val->has("xValue")) {
-        _xValue =  floor(json_val->getDouble("xValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _xValue =  floor(json_val->getDouble("xValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("yValue")) {
-        _yValue =  floor(json_val->getDouble("yValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _yValue =  floor(json_val->getDouble("yValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("zValue")) {
-        _zValue =  floor(json_val->getDouble("zValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _zValue =  floor(json_val->getDouble("zValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("gravityCancellation")) {
         _gravityCancellation =  (Y_GRAVITYCANCELLATION_enum)json_val->getInt("gravityCancellation");
@@ -146,7 +146,7 @@ int YAccelerometer::set_bandwidth(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("bandwidth", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

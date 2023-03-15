@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yjni.c 44049 2021-02-26 10:57:40Z web $
+ * $Id: yjni.c 49591 2022-04-28 12:47:10Z mvuilleu $
  *
  * Implementation of public entry points to the low-level API
  *
@@ -36,7 +36,10 @@
  *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
-#define __FILE_ID__  "yjni"
+
+#include "ydef_private.h"
+#define __FILE_ID__     MK_FILEID('J','N','I')
+#define __FILENAME__   "yjni"
 
 #include "yapi.h"
 #include "yproto.h"

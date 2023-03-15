@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef.h 44909 2021-05-05 06:40:27Z web $
+ * $Id: ydef.h 52551 2022-12-23 09:03:24Z seb $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -208,8 +208,8 @@ typedef int64_t                 s64;
 
 #elif defined(__arm__)
 
-#define FREERTOS_API
 #include <stdint.h>
+#include <stdbool.h>
 typedef uint8_t                 u8;
 typedef int8_t                  s8;
 typedef uint16_t                u16;
@@ -219,7 +219,7 @@ typedef int32_t                 s32;
 typedef uint64_t                u64;
 typedef int64_t                 s64;
 #define VARIABLE_SIZE           0
-#ifndef YBOOTLOADER
+#ifdef FREERTOS_API
 #include <pthread.h>
 #include <errno.h>
 #endif
@@ -253,7 +253,7 @@ typedef union _IPvX_ADDR {
 } IPvX_ADDR;
 
 // end of LINUX_API
-#if defined(MICROCHIP_API) || defined(FREERTOS_API)
+#if defined(MICROCHIP_API) || defined(TEXAS_API)
 #define EMBEDDED_API
 #endif
 
@@ -336,11 +336,8 @@ typedef void *YIOHDL;
 #define _FAR
 #endif
 
-
-
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
-
 
 //#define DEBUG_CRITICAL_SECTION
 
@@ -350,6 +347,13 @@ typedef void *YIOHDL;
 #include <ws2tcpip.h>
 #include <WinBase.h>
 #endif
+#ifdef FREERTOS_API
+// Critical sections on FreeRTOS
+#include <FreeRTOS.h>
+#include <semphr.h>
+#endif
+
+
 typedef enum  {
     YCS_UNALLOCATED=0,
     YCS_ALLOCATED=1,
@@ -380,6 +384,9 @@ typedef struct {
     volatile int                 lock;
 #if defined(WINDOWS_API)
     CRITICAL_SECTION             cs;
+#elif defined(FREERTOS_API)
+    SemaphoreHandle_t            handle;
+    StaticSemaphore_t            buffer;
 #else
     pthread_mutex_t              cs;
 #endif
@@ -396,15 +403,19 @@ int yDbgTryEnterCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTIO
 void yDbgLeaveCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION *cs);
 void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION *cs);
 
-#define yInitializeCriticalSection(cs)  yDbgInitializeCriticalSection(__FILE_ID__,__LINE__,cs)
-#define yEnterCriticalSection(cs)       yDbgEnterCriticalSection(__FILE_ID__,__LINE__,cs)
-#define yTryEnterCriticalSection(cs)    yDbgTryEnterCriticalSection(__FILE_ID__,__LINE__,cs)
-#define yLeaveCriticalSection(cs)       yDbgLeaveCriticalSection(__FILE_ID__,__LINE__,cs)
-#define yDeleteCriticalSection(cs)      yDbgDeleteCriticalSection(__FILE_ID__,__LINE__,cs)
+#define DECLARE_CRITICALSECTION(decl) decl;
+#define yInitializeCriticalSection(cs)  yDbgInitializeCriticalSection(__FILENAME__,__LINE__,cs)
+#define yEnterCriticalSection(cs)       yDbgEnterCriticalSection(__FILENAME__,__LINE__,cs)
+#define yTryEnterCriticalSection(cs)    yDbgTryEnterCriticalSection(__FILENAME__,__LINE__,cs)
+#define yLeaveCriticalSection(cs)       yDbgLeaveCriticalSection(__FILENAME__,__LINE__,cs)
+#define yDeleteCriticalSection(cs)      yDbgDeleteCriticalSection(__FILENAME__,__LINE__,cs)
 
 #else
-#if defined(MICROCHIP_API)
-#define yCRITICAL_SECTION               u8
+
+#if defined(MICROCHIP_API) || defined(BOOTLOADER_API) || (defined(TEXAS_API) && !defined(FREERTOS_API))
+
+// No thread, no critical section
+#define DECLARE_CRITICALSECTION(decl)
 #define yInitializeCriticalSection(cs)
 #define yEnterCriticalSection(cs)
 #define yTryEnterCriticalSection(cs)    1
@@ -413,26 +424,34 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 
 #elif defined(FREERTOS_API)
 
-#ifndef YBOOTLOADER
+// Critical sections on FreeRTOS
 #include <FreeRTOS.h>
 #include <semphr.h>
-#define yCRITICAL_SECTION  SemaphoreHandle_t
+typedef struct {
+    SemaphoreHandle_t handle;
+    StaticSemaphore_t buffer;
+} yCRITICAL_SECTION;
+#define DECLARE_CRITICALSECTION(decl) decl;
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
 void yEnterCriticalSection(yCRITICAL_SECTION *cs);
 int yTryEnterCriticalSection(yCRITICAL_SECTION *cs);
 void yLeaveCriticalSection(yCRITICAL_SECTION *cs);
 void yDeleteCriticalSection(yCRITICAL_SECTION *cs);
-#endif
+
 #else
 
+// Critical sections on a real OS
 typedef void* yCRITICAL_SECTION;
+#define DECLARE_CRITICALSECTION(decl) decl;
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
 void yEnterCriticalSection(yCRITICAL_SECTION *cs);
 int yTryEnterCriticalSection(yCRITICAL_SECTION *cs);
 void yLeaveCriticalSection(yCRITICAL_SECTION *cs);
 void yDeleteCriticalSection(yCRITICAL_SECTION *cs);
+
 #endif
-#endif
+
+#endif // #ifdef DEBUG_CRITICAL_SECTION
 
 
 typedef enum {
@@ -451,7 +470,8 @@ typedef enum {
     YAPI_UNAUTHORIZED     = -12,    // unauthorized access to password-protected device
     YAPI_RTC_NOT_READY    = -13,    // real-time clock has not been initialized (or time was lost)
     YAPI_FILE_NOT_FOUND   = -14,    // the file is not found
-    YAPI_SSL_ERROR        = -15     // Error reported by mbedSSL
+    YAPI_SSL_ERROR        = -15,    // Error reported by mbedSSL
+    YAPI_BUFFER_TOO_SMALL = -16     // The buffer provided is too small
 } YRETCODE;
 
 #define YISERR(retcode)   ((retcode) < 0)
@@ -933,7 +953,6 @@ typedef union {
 
 #define YSSDP_PORT 1900
 #define YSSDP_MCAST_ADDR_STR  "239.255.255.250"
-#define YSSDP_MCAST_ADDR (0xFAFFFFEF)
 #define YSSDP_URN_YOCTOPUCE "urn:yoctopuce-com:device:hub:1"
 
 // prototype of the async request completion callback
@@ -967,7 +986,7 @@ typedef void (*yapiRequestProgressCallback)(void *context, u32 acked, u32 totalb
 #define ERASE_BLOCK_SIZE_BADDR      (ERASE_BLOCK_SIZE_INSTR*2)
 #define PROGRAM_BLOCK_SIZE_BADDR    (PROGRAM_BLOCK_SIZE_INSTR*2)
 
-// for MSP432E we use dword as instruction lenght. This is not a limitation of th CPU it's just
+// for MSP432E we use dword as instruction length. This is not a limitation of th CPU it's just
 // an implement choice to match at best the microchip architecture
 #define MSP432E_INSTR_LEN                   4
 #define MSP432E_MAX_INSTR_IN_PACKET         (MAX_BYTE_IN_PACKET/MSP432E_INSTR_LEN)
@@ -976,6 +995,14 @@ typedef void (*yapiRequestProgressCallback)(void *context, u32 acked, u32 totalb
 #define MSP432E_ERASE_BLOCK_SIZE_BADDR      (MSP432E_ERASE_BLOCK_SIZE_INSTR * MSP432E_INSTR_LEN)  // 16KB
 #define MSP432E_PROGRAM_BLOCK_SIZE_BADDR    (MSP432E_PROGRAM_BLOCK_SIZE_INSTR * MSP432E_INSTR_LEN)    // we can write 32 dword in one operation
 
+// for TM4C123 we use dword as instruction length. This is not a limitation of th CPU it's just
+// an implement choice to match at best the microchip architecture
+#define TM4C123_INSTR_LEN                   4
+#define TM4C123_MAX_INSTR_IN_PACKET         (MAX_BYTE_IN_PACKET/TM4C123_INSTR_LEN)
+#define TM4C123_ERASE_BLOCK_SIZE_INSTR      0x1000            // the minimal erase size in nb instr
+#define TM4C123_PROGRAM_BLOCK_SIZE_INSTR    32                // the minimal program size in nb instr
+#define TM4C123_ERASE_BLOCK_SIZE_BADDR      (TM4C123_ERASE_BLOCK_SIZE_INSTR * TM4C123_INSTR_LEN)  // 16KB
+#define TM4C123_PROGRAM_BLOCK_SIZE_BADDR    (TM4C123_PROGRAM_BLOCK_SIZE_INSTR * TM4C123_INSTR_LEN)    // we can write 32 dword in one operation
 
 // For Texas chips address and size of memory are count in BYTES (not in instructions of words)
 typedef union {
@@ -1110,21 +1137,17 @@ typedef union {
 
 //device identifications PIC24FJ256DA210 family
 #define FAMILY_PIC24FJ256DA210 0X41
-#define PIC24FJ128DA206     0x08
-#define PIC24FJ128DA106     0x09
-#define PIC24FJ128DA210     0x0A
-#define PIC24FJ128DA110     0x0B
 #define PIC24FJ256DA206     0x0C
-#define PIC24FJ256DA106     0x0D
-#define PIC24FJ256DA210     0x0E
-#define PIC24FJ256DA110     0x0F
 
 //device identifications PIC24FJ64GB004 family
 #define FAMILY_PIC24FJ64GB004 0x42
-#define PIC24FJ32GB002      0x03
 #define PIC24FJ64GB002      0x07
-#define PIC24FJ32GB004      0x0B
-#define PIC24FJ64GB004      0x0F
+
+//device identifications for Texas chips
+#define FAMILY_TM4C123      0x05
+#define FAMILY_MSP432E4     0x0C
+#define YCPU_MSP432E401Y    0X01
+#define YCPU_TM4C123GH6PM   0X01
 
 // Spansion Flash JEDEC id
 #define JEDEC_SPANSION_4MB  0x16
@@ -1135,7 +1158,7 @@ typedef union {
 
 #define Y_IS_TEXAS(devid_family)    (devid_family != FAMILY_PIC24FJ256DA210 && devid_family != FAMILY_PIC24FJ64GB004)
 //fixme remove when no more needed
-#define DEBUG_TRACE()  ylogf("%s:%d\n",__FILE_ID__,__LINE__)
+#define DEBUG_TRACE()  ylogf("%s:%d\n",__FILENAME__,__LINE__)
 
 
 #if defined(MICROCHIP_API) || defined(FREERTOS_API) || defined(VIRTUAL_HUB)

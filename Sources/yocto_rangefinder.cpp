@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_rangefinder.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_rangefinder.cpp 53034 2023-02-02 10:16:55Z seb $
  *
  *  Implements yFindRangeFinder(), the high-level API for RangeFinder functions
  *
@@ -94,7 +94,7 @@ int YRangeFinder::_parseAttr(YJSONObject *json_val)
         _hardwareCalibration =  json_val->getString("hardwareCalibration");
     }
     if(json_val->has("currentTemperature")) {
-        _currentTemperature =  floor(json_val->getDouble("currentTemperature") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _currentTemperature =  floor(json_val->getDouble("currentTemperature") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("command")) {
         _command =  json_val->getString("command");
@@ -185,7 +185,7 @@ int YRangeFinder::set_rangeFinderMode(Y_RANGEFINDERMODE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("rangeFinderMode", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -246,7 +246,7 @@ int YRangeFinder::set_timeFrame(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("timeFrame", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -547,7 +547,7 @@ int YRangeFinder::triggerTemperatureCalibration(void)
 
 /**
  * Triggers the photon detector hardware calibration.
- * This function is part of the calibration procedure to compensate for the the effect
+ * This function is part of the calibration procedure to compensate for the effect
  * of a cover glass. Make sure to read the chapter about hardware calibration for details
  * on the calibration procedure for proper results.
  *
@@ -584,7 +584,7 @@ int YRangeFinder::triggerOffsetCalibration(double targetDist)
 
 /**
  * Triggers the hardware cross-talk calibration of the distance sensor.
- * This function is part of the calibration procedure to compensate for the the effect
+ * This function is part of the calibration procedure to compensate for the effect
  * of a cover glass. Make sure to read the chapter about hardware calibration for details
  * on the calibration procedure for proper results.
  *

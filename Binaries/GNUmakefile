@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-#  $Id: GNUmakefile 45235 2021-05-22 22:29:30Z web $
+#  $Id: GNUmakefile 52669 2023-01-09 09:50:05Z web $
 #
 #  GNU Makefile for linux and Mac OS X
 #
@@ -332,6 +332,7 @@ YOCTO_API_OBJS_STAT = yocto_api.o\
 	yocto_hubport.o \
 	yocto_humidity.o \
 	yocto_i2cport.o \
+	yocto_inputchain.o \
 	yocto_latitude.o \
 	yocto_led.o \
 	yocto_lightsensor.o \
@@ -373,6 +374,7 @@ YOCTO_API_OBJS_STAT = yocto_api.o\
 	yocto_watchdog.o \
 	yocto_weighscale.o \
 	yocto_wireless.o \
+
 #-- yocto_patch_stop --
 
 
@@ -888,7 +890,7 @@ $(YAPI_DIR_OSX)libyapi-static.a: $(OBJDIR_OSX) $(YAPI_DIR_OSX) $(YAPI_OBJS_STAT_
 
 $(DIR_OSX)libyocto.dylib: $(DIR_OSX) $(ALL_OBJS_DYN_OSX) $(ALL_H)
 	@echo linking $@
-	@$(CPP_OSX)  -m64 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-undefined,dynamic_lookup,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyocto.dylib -o $@ $(ALL_OBJS_DYN_OSX)
+	@$(CPP_OSX)  -m64 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyocto.dylib -o $@ $(ALL_OBJS_DYN_OSX)
 
 $(YAPI_DIR_OSX)libyapi.dylib : OPTS_DYN = $(OPTS_JAVA)
 $(YAPI_DIR_OSX)libyapi.dylib: $(DIR_OSX) $(YAPI_OBJS_DYN_OSX) $(ALL_H)
@@ -896,7 +898,7 @@ $(YAPI_DIR_OSX)libyapi.dylib: $(DIR_OSX) $(YAPI_OBJS_DYN_OSX) $(ALL_H)
 ifdef JAVA_HOME
 	@echo java_home set to $(JAVA_HOME)
 endif
-	@$(CC_OSX) -m64 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-undefined,dynamic_lookup,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyapi.dylib -o $@ $(YAPI_OBJS_DYN_OSX)
+	@$(CC_OSX) -m64 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyapi.dylib -o $@ $(YAPI_OBJS_DYN_OSX)
 
 $(DIR_OSX)test: $(OBJDIR_OSX) $(YAPI_DIR_OSX) ALL_OBJS_STAT_OSX) $(ALL_H) $(TEST_SRC)
 	@$(RM) -rf $@
@@ -909,7 +911,7 @@ $(YAPI_DIR_OSX32)libyapi.dylib: $(OBJDIR_OSX32) $(YAPI_DIR_OSX32) $(YAPI_OBJS_DY
 ifdef JAVA_HOME
 	@echo java_home set to $(JAVA_HOME)
 endif
-	@$(CC_OSX32) -m32 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-undefined,dynamic_lookup,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyapi.dylib -o $@ $(YAPI_OBJS_DYN_OSX32)
+	@$(CC_OSX32) -m32 -dynamiclib -Wl,-reexport_framework,IOKit,-reexport_framework,CoreFoundation,-headerpad_max_install_names,-compatibility_version,1.0,-current_version,1.0,-install_name,/usr/local/lib/libyapi.dylib -o $@ $(YAPI_OBJS_DYN_OSX32)
 
 win32: $(LIBS_WIN32)
 

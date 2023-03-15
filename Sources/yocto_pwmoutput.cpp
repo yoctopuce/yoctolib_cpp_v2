@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_pwmoutput.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_pwmoutput.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindPwmOutput(), the high-level API for PwmOutput functions
  *
@@ -89,16 +89,16 @@ int YPwmOutput::_parseAttr(YJSONObject *json_val)
         _enabled =  (Y_ENABLED_enum)json_val->getInt("enabled");
     }
     if(json_val->has("frequency")) {
-        _frequency =  floor(json_val->getDouble("frequency") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _frequency =  floor(json_val->getDouble("frequency") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("period")) {
-        _period =  floor(json_val->getDouble("period") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _period =  floor(json_val->getDouble("period") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("dutyCycle")) {
-        _dutyCycle =  floor(json_val->getDouble("dutyCycle") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _dutyCycle =  floor(json_val->getDouble("dutyCycle") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("pulseDuration")) {
-        _pulseDuration =  floor(json_val->getDouble("pulseDuration") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _pulseDuration =  floor(json_val->getDouble("pulseDuration") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("pwmTransition")) {
         _pwmTransition =  json_val->getString("pwmTransition");
@@ -107,7 +107,7 @@ int YPwmOutput::_parseAttr(YJSONObject *json_val)
         _enabledAtPowerOn =  (Y_ENABLEDATPOWERON_enum)json_val->getInt("enabledAtPowerOn");
     }
     if(json_val->has("dutyCycleAtPowerOn")) {
-        _dutyCycleAtPowerOn =  floor(json_val->getDouble("dutyCycleAtPowerOn") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _dutyCycleAtPowerOn =  floor(json_val->getDouble("dutyCycleAtPowerOn") / 65.536 + 0.5) / 1000.0;
     }
     return YFunction::_parseAttr(json_val);
 }
@@ -188,7 +188,7 @@ int YPwmOutput::set_frequency(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("frequency", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -246,7 +246,7 @@ int YPwmOutput::set_period(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("period", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -300,7 +300,7 @@ int YPwmOutput::set_dutyCycle(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("dutyCycle", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -355,7 +355,7 @@ int YPwmOutput::set_pulseDuration(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("pulseDuration", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -506,7 +506,7 @@ int YPwmOutput::set_dutyCycleAtPowerOn(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("dutyCycleAtPowerOn", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_quadraturedecoder.cpp 45306 2021-05-26 08:04:16Z web $
+ *  $Id: yocto_quadraturedecoder.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindQuadratureDecoder(), the high-level API for QuadratureDecoder functions
  *
@@ -77,7 +77,7 @@ const double YQuadratureDecoder::SPEED_INVALID = YAPI_INVALID_DOUBLE;
 int YQuadratureDecoder::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("speed")) {
-        _speed =  floor(json_val->getDouble("speed") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _speed =  floor(json_val->getDouble("speed") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("decoding")) {
         _decoding =  (Y_DECODING_enum)json_val->getInt("decoding");
@@ -105,7 +105,7 @@ int YQuadratureDecoder::set_currentValue(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("currentValue", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -248,7 +248,7 @@ int YQuadratureDecoder::set_edgesPerCycle(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("edgesPerCycle", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -282,7 +282,7 @@ int YQuadratureDecoder::set_edgesPerCycle(int newval)
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the quadrature decoder, for instance
- *         YPWMRX01.quadratureDecoder.
+ *         YMXBTN01.quadratureDecoder1.
  *
  * @return a YQuadratureDecoder object allowing you to drive the quadrature decoder.
  */

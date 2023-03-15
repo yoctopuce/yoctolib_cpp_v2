@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_motor.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_motor.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindMotor(), the high-level API for Motor functions
  *
@@ -89,19 +89,19 @@ int YMotor::_parseAttr(YJSONObject *json_val)
         _motorStatus =  (Y_MOTORSTATUS_enum)json_val->getInt("motorStatus");
     }
     if(json_val->has("drivingForce")) {
-        _drivingForce =  floor(json_val->getDouble("drivingForce") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _drivingForce =  floor(json_val->getDouble("drivingForce") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("brakingForce")) {
-        _brakingForce =  floor(json_val->getDouble("brakingForce") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _brakingForce =  floor(json_val->getDouble("brakingForce") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("cutOffVoltage")) {
-        _cutOffVoltage =  floor(json_val->getDouble("cutOffVoltage") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _cutOffVoltage =  floor(json_val->getDouble("cutOffVoltage") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("overCurrentLimit")) {
         _overCurrentLimit =  json_val->getInt("overCurrentLimit");
     }
     if(json_val->has("frequency")) {
-        _frequency =  floor(json_val->getDouble("frequency") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _frequency =  floor(json_val->getDouble("frequency") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("starterTime")) {
         _starterTime =  json_val->getInt("starterTime");
@@ -164,7 +164,7 @@ int YMotor::set_motorStatus(Y_MOTORSTATUS_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("motorStatus", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -193,7 +193,7 @@ int YMotor::set_drivingForce(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("drivingForce", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -251,7 +251,7 @@ int YMotor::set_brakingForce(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("brakingForce", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -314,7 +314,7 @@ int YMotor::set_cutOffVoltage(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("cutOffVoltage", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -409,7 +409,7 @@ int YMotor::set_overCurrentLimit(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("overCurrentLimit", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -438,7 +438,7 @@ int YMotor::set_frequency(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("frequency", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -528,7 +528,7 @@ int YMotor::set_starterTime(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("starterTime", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -594,7 +594,7 @@ int YMotor::set_failSafeTimeout(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("failSafeTimeout", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

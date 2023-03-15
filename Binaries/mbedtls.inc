@@ -98,3 +98,5 @@ OBJS_TLS= \
 	  ssl_tls13_keys.o \
 	  # This line is intentionally left blank
 
+
+MBED_TLS_SRC_FILES=  $(patsubst %.o, %.c, $(OBJS_CRYPTO) $(OBJS_X509) $(OBJS_TLS))

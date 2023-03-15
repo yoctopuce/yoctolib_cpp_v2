@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_cellular.cpp 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_cellular.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  * Implements yFindCellular(), the high-level API for Cellular functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_cellular.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "cellular"
@@ -743,7 +744,7 @@ int YCellular::set_enableData(Y_ENABLEDATA_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("enableData", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -905,7 +906,7 @@ int YCellular::set_pingInterval(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("pingInterval", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -959,7 +960,7 @@ int YCellular::set_dataSent(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("dataSent", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1013,7 +1014,7 @@ int YCellular::set_dataReceived(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("dataReceived", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -5849,6 +5850,48 @@ string YCellular::imm_decodePLMN(string mccmnc)
 string YCellular::decodePLMN(string mccmnc)
 {
     return this->imm_decodePLMN(mccmnc);
+}
+
+/**
+ * Returns the list available radio communication profiles, as a string array
+ * (YoctoHub-GSM-4G only).
+ * Each string is a made of a numerical ID, followed by a colon,
+ * followed by the profile description.
+ *
+ * @return a list of string describing available radio communication profiles.
+ */
+vector<string> YCellular::get_communicationProfiles(void)
+{
+    string profiles;
+    vector<string> lines;
+    int nlines = 0;
+    int idx = 0;
+    string line;
+    int cpos = 0;
+    int profno = 0;
+    vector<string> res;
+
+    profiles = this->_AT("+UMNOPROF=?");
+    lines = _strsplit(profiles,'\n');
+    nlines = (int)lines.size();
+    if (!(nlines > 0)) {
+        _throw(YAPI_IO_ERROR,"fail to retrieve profile list");
+        return res;
+    }
+    res.clear();
+    idx = 0;
+    while (idx < nlines) {
+        line = lines[idx];
+        cpos = _ystrpos(line, ":");
+        if (cpos > 0) {
+            profno = atoi(((line).substr( 0, cpos)).c_str());
+            if (profno > 1) {
+                res.push_back(line);
+            }
+        }
+        idx = idx + 1;
+    }
+    return res;
 }
 
 YCellular *YCellular::nextCellular(void)

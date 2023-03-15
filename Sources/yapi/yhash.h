@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yhash.h 44980 2021-05-10 11:24:42Z web $
+ * $Id: yhash.h 51581 2022-11-14 11:00:14Z seb $
  *
  * Simple hash tables and device/function information store
  *
@@ -52,14 +52,8 @@ extern "C" {
 #define HASH_BUF_SIZE 28
 #define HASH_BUF_POW   5 /* HASH_BUF_POW = log_2(HASH_BUF_SIZE+2+2) */
 #ifdef EMBEDDED_API
-#ifdef FREERTOS_API
-//fixme find correct value for NB_MAX_HASH_ENTRIES and NB_MAX_DEVICES
-#define NB_MAX_HASH_ENTRIES 511    /* keep hash table size <32KB on Yocto-Hub */
-#define NB_MAX_DEVICES        40     /* base hub + up to 15 shields (up to 4 slave ports) */
-#else
 #define NB_MAX_HASH_ENTRIES 1023     /* keep hash table size <32KB on Yocto-Hub */
 #define NB_MAX_DEVICES        80     /* base hub + up to 15 shields (up to 4 slave ports) */
-#endif
 #else
 #define NB_MAX_HASH_ENTRIES 8192
 #define NB_MAX_DEVICES       256
@@ -182,51 +176,6 @@ extern yBlkHdl yYpListHead;
 #define YMAX_HUB_URL_DEEP           7
 #define YOCTO_HOSTNAME_NAME         (HASH_BUF_SIZE*2+2)
 
-typedef enum {
-    USB_URL,
-    IPV4_URL,
-    NAME_URL
-} yAbsUrlType;
-
-typedef enum {
-    PROTO_LEGACY = 0,
-    PROTO_AUTO,
-    PROTO_HTTP,
-    PROTO_WEBSOCKET,
-    PROTO_SECURE_HTTP,
-    PROTO_SECURE_WEBSOCKET,
-    PROTO_UNKNOWN
-} yAbsUrlProto;
-
-
-typedef struct {
-    union {
-        struct {
-            yStrRef host;
-            yStrRef domaine;
-            u16 port;
-        } byname;
-
-        struct {
-            yStrRef ip;
-            yHash invalid;
-            u16 port;
-        } byip;
-
-        struct {
-            yHash invalid1;
-            yHash invalid2;
-            yStrRef serial;
-        } byusb;
-    };
-
-    u16 proto;
-    yStrRef user;
-    yStrRef password;
-    yStrRef subdomain;
-    yStrRef path[YMAX_HUB_URL_DEEP];
-} yAbsUrl;
-
 void  yHashInit(void);
 yHash yHashPutBuf(const u8 *buf, u16 len);
 yHash yHashPutStr(const char *str);
@@ -237,14 +186,8 @@ void  yHashGetStr(yHash yhash, char *destbuf, u16 bufsize);
 u16   yHashGetStrLen(yHash yhash);
 char  *yHashGetStrPtr(yHash yhash);
 #ifndef EMBEDDED_API
-yUrlRef yHashUrlFromRef(yUrlRef urlref, const char *rootUrl);
-yUrlRef yHashUrl(const char *host, const char *rootUrl, u8 testonly, char *errmsg);
-yAbsUrlType  yHashGetUrlPort(yUrlRef urlref, char *url, u16 *port, yAbsUrlProto *proto, yStrRef *user, yStrRef *password, yStrRef *subdomain);
-int yHashSameHub(yUrlRef url_a, yUrlRef url_b);
 void yHashFree(void);
 #endif
-yUrlRef yHashUrlUSB(yHash serial);
-yUrlRef yHashUrlAPI(void);
 u16 yBlkListLength(yBlkHdl hdl);
 yBlkHdl yBlkListSeek(yBlkHdl hdl, u16 pos);
 int wpRegister(int devYdx, yStrRef serial, yStrRef logicalName, yStrRef productName, u16 productId, yUrlRef devUrl, s8 beacon);
@@ -254,8 +197,8 @@ void wpGetLogicalName(yBlkHdl hdl, char* logicalName);
 #ifdef DEBUG_WP_LOCK
 void    wpPreventUnregisterDbg(const char *file, u32 line);
 void    wpAllowUnregisterDbg(const char *file, u32 line);
-#define wpPreventUnregister()   wpPreventUnregisterDbg(__FILE__,__LINE__)
-#define wpAllowUnregister()     wpAllowUnregisterDbg(__FILE__,__LINE__)
+#define wpPreventUnregister()   wpPreventUnregisterDbg(__FILENAME__,__LINE__)
+#define wpAllowUnregister()     wpAllowUnregisterDbg(__FILENAME__,__LINE__)
 #else
 void wpPreventUnregisterEx(void);
 void wpAllowUnregisterEx(void);

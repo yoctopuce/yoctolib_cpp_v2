@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_steppermotor.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_steppermotor.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindStepperMotor(), the high-level API for StepperMotor functions
  *
@@ -104,16 +104,16 @@ int YStepperMotor::_parseAttr(YJSONObject *json_val)
         _stepPos =  json_val->getDouble("stepPos") / 16.0;
     }
     if(json_val->has("speed")) {
-        _speed =  floor(json_val->getDouble("speed") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _speed =  floor(json_val->getDouble("speed") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("pullinSpeed")) {
-        _pullinSpeed =  floor(json_val->getDouble("pullinSpeed") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _pullinSpeed =  floor(json_val->getDouble("pullinSpeed") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("maxAccel")) {
-        _maxAccel =  floor(json_val->getDouble("maxAccel") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _maxAccel =  floor(json_val->getDouble("maxAccel") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("maxSpeed")) {
-        _maxSpeed =  floor(json_val->getDouble("maxSpeed") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _maxSpeed =  floor(json_val->getDouble("maxSpeed") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("stepping")) {
         _stepping =  (Y_STEPPING_enum)json_val->getInt("stepping");
@@ -223,7 +223,7 @@ int YStepperMotor::set_stepPos(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf,"%.2f", floor(newval * 100.0)/100.0); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%.2f", floor(newval * 100.0)/100.0); rest_val = string(buf);
         res = _setAttr("stepPos", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -309,7 +309,7 @@ int YStepperMotor::set_pullinSpeed(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("pullinSpeed", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -365,7 +365,7 @@ int YStepperMotor::set_maxAccel(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("maxAccel", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -419,7 +419,7 @@ int YStepperMotor::set_maxSpeed(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("maxSpeed", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -507,7 +507,7 @@ int YStepperMotor::set_stepping(Y_STEPPING_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("stepping", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -561,7 +561,7 @@ int YStepperMotor::set_overcurrent(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("overcurrent", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -616,7 +616,7 @@ int YStepperMotor::set_tCurrStop(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("tCurrStop", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -671,7 +671,7 @@ int YStepperMotor::set_tCurrRun(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("tCurrRun", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -802,7 +802,7 @@ int YStepperMotor::set_auxSignal(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("auxSignal", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

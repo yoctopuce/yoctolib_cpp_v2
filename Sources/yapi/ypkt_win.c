@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ypkt_win.c 44970 2021-05-10 10:36:22Z web $
+ * $Id: ypkt_win.c 49591 2022-04-28 12:47:10Z mvuilleu $
  *
  * OS-specific USB packet layer, Windows version
  *
@@ -37,7 +37,10 @@
  *
  *********************************************************************/
 
-#define __FILE_ID__  "ypkt_win"
+#include "ydef_private.h"
+#define __FILE_ID__     MK_FILEID('P','K','T')
+#define __FILENAME__   "ypkt_win"
+
 #include "yapi.h"
 #include <stdio.h>
 #if defined(WINDOWS_API) && !defined(WINCE)
@@ -62,9 +65,9 @@ static int yWinSetErrEx(u32 line, yInterfaceSt* iface, DWORD err, const char* ms
     if (errmsg == NULL)
         return YAPI_IO_ERROR;
     if (iface) {
-        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d(%s:%d): %s(%d)", iface->serial, iface->ifaceno, __FILE_ID__, line, msg, (u32)err);
+        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d(%s:%d): %s(%d)", iface->serial, iface->ifaceno, __FILENAME__, line, msg, (u32)err);
     } else {
-        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d: %s(%d)", __FILE_ID__, line, msg, (u32)err);
+        YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d: %s(%d)", __FILENAME__, line, msg, (u32)err);
     }
     len = YSTRLEN(errmsg);
     FormatMessageA(
@@ -86,7 +89,7 @@ static void yWinPushEx(u32 line, yInterfaceSt *iface, pktQueue  *q, DWORD err)
     int len;
     char errmsg[YOCTO_ERRMSG_LEN];
 
-    YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d(%s:%d): (%d)", iface->serial, iface->ifaceno, __FILE_ID__, line, (u32)err);
+    YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "%s:%d(%s:%d): (%d)", iface->serial, iface->ifaceno, __FILENAME__, line, (u32)err);
     len = YSTRLEN(errmsg);
     FormatMessageA(
         FORMAT_MESSAGE_FROM_SYSTEM |
@@ -589,7 +592,7 @@ static int StartReadIO(yInterfaceSt* iface, char* errmsg)
     DWORD readed;
     u32 retrycount = 0;
 retry:
-    YASSERT(iface->rdpending == 0);
+    YASSERT(iface->rdpending == 0, iface->rdpending);
     memset(&iface->rdOL, 0, sizeof(iface->rdOL));
     //check if we need that : if(!SetEvent(iface->rdEV)) return yWinSetErr(errmsg);
     iface->rdOL.hEvent = iface->EV[YWIN_EVENT_READ];

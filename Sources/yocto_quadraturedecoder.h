@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_quadraturedecoder.h 45306 2021-05-26 08:04:16Z web $
+ *  $Id: yocto_quadraturedecoder.h 45930 2021-08-12 07:31:00Z web $
  *
  *  Declares yFindQuadratureDecoder(), the high-level API for QuadratureDecoder functions
  *
@@ -75,7 +75,8 @@ typedef enum {
 
 //--- (YQuadratureDecoder declaration)
 /**
- * YQuadratureDecoder Class: quadrature decoder control interface, available for instance in the Yocto-PWM-Rx
+ * YQuadratureDecoder Class: quadrature decoder control interface, available for instance in the
+ * Yocto-MaxiKnob or the Yocto-PWM-Rx
  *
  * The YQuadratureDecoder class allows you to read and configure Yoctopuce quadrature decoders.
  * It inherits from YSensor class the core functions to read measurements,
@@ -221,7 +222,7 @@ public:
      * call registerHub() at application initialization time.
      *
      * @param func : a string that uniquely characterizes the quadrature decoder, for instance
-     *         YPWMRX01.quadratureDecoder.
+     *         YMXBTN01.quadratureDecoder1.
      *
      * @return a YQuadratureDecoder object allowing you to drive the quadrature decoder.
      */
@@ -321,7 +322,7 @@ public:
  * call registerHub() at application initialization time.
  *
  * @param func : a string that uniquely characterizes the quadrature decoder, for instance
- *         YPWMRX01.quadratureDecoder.
+ *         YMXBTN01.quadratureDecoder1.
  *
  * @return a YQuadratureDecoder object allowing you to drive the quadrature decoder.
  */

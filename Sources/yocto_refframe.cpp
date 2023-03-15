@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_refframe.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_refframe.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindRefFrame(), the high-level API for RefFrame functions
  *
@@ -94,7 +94,7 @@ int YRefFrame::_parseAttr(YJSONObject *json_val)
         _mountPos =  json_val->getInt("mountPos");
     }
     if(json_val->has("bearing")) {
-        _bearing =  floor(json_val->getDouble("bearing") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _bearing =  floor(json_val->getDouble("bearing") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("calibrationParam")) {
         _calibrationParam =  json_val->getString("calibrationParam");
@@ -134,7 +134,7 @@ int YRefFrame::set_mountPos(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("mountPos", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -172,7 +172,7 @@ int YRefFrame::set_bearing(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("bearing", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -302,7 +302,7 @@ int YRefFrame::set_fusionMode(Y_FUSIONMODE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("fusionMode", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

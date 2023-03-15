@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_gps.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_gps.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindGps(), the high-level API for Gps functions
  *
@@ -106,7 +106,7 @@ int YGps::_parseAttr(YJSONObject *json_val)
         _satPerConst =  json_val->getLong("satPerConst");
     }
     if(json_val->has("gpsRefreshRate")) {
-        _gpsRefreshRate =  floor(json_val->getDouble("gpsRefreshRate") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _gpsRefreshRate =  floor(json_val->getDouble("gpsRefreshRate") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("coordSystem")) {
         _coordSystem =  (Y_COORDSYSTEM_enum)json_val->getInt("coordSystem");
@@ -121,16 +121,16 @@ int YGps::_parseAttr(YJSONObject *json_val)
         _longitude =  json_val->getString("longitude");
     }
     if(json_val->has("dilution")) {
-        _dilution =  floor(json_val->getDouble("dilution") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _dilution =  floor(json_val->getDouble("dilution") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("altitude")) {
-        _altitude =  floor(json_val->getDouble("altitude") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _altitude =  floor(json_val->getDouble("altitude") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("groundSpeed")) {
-        _groundSpeed =  floor(json_val->getDouble("groundSpeed") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _groundSpeed =  floor(json_val->getDouble("groundSpeed") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("direction")) {
-        _direction =  floor(json_val->getDouble("direction") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _direction =  floor(json_val->getDouble("direction") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("unixTime")) {
         _unixTime =  json_val->getLong("unixTime");
@@ -317,7 +317,7 @@ int YGps::set_coordSystem(Y_COORDSYSTEM_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("coordSystem", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -381,7 +381,7 @@ int YGps::set_constellation(Y_CONSTELLATION_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("constellation", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -678,7 +678,7 @@ int YGps::set_utcOffset(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("utcOffset", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_files.cpp 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_files.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  * Implements yFindFiles(), the high-level API for Files functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_files.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "files"

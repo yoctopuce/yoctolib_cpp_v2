@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.h 45122 2021-05-18 08:41:17Z web $
+ * $Id: yssl.h 53508 2023-03-10 09:48:02Z seb $
  *
  *  Declaration of a client TCP stack
  *
@@ -81,9 +81,10 @@ typedef struct {
 #define YSSL_SOCKET yssl_socket_st*
 
 int yTcpInitSSL(char* errmsg);
-int yTcpSetCertificateSSL(const char* certfile, const char* keyfile, char* errmsg);
+int yTcpSetSrvCertificateSSL(const char* certfile, const char* keyfile, char* errmsg);
+int yTcpAddClientCertificateSSL(const u8* cert, u32 cert_len, char* errmsg);
 void yTcpShutdownSSL(void);
-int yTcpOpenSSL(YSSL_SOCKET* newskt, IPvX_ADDR* ip, u16 port, u64 mstimeout, char* errmsg);
+int yTcpOpenSSL(YSSL_SOCKET* newskt, const char *host, u16 port, int skip_cert_validation, u64 mstimeout, char* errmsg);
 int yTcpAcceptSSL(YSSL_SOCKET* newskt, YSOCKET sock, char* errmsg);
 void yTcpCloseSSL(YSSL_SOCKET skt);
 YSOCKET yTcpFdSetSSL(YSSL_SOCKET yssl, void* set, YSOCKET sktmax);
@@ -92,12 +93,13 @@ int yTcpCheckSocketStillValidSSL(YSSL_SOCKET skt, char* errmsg);
 int yTcpWriteSSL(YSSL_SOCKET skt, const u8* buffer, int len, char* errmsg);
 int yTcpReadSSL(YSSL_SOCKET skt, u8* buffer, int len, char* errmsg);
 u32 yTcpGetRcvBufSizeSSL(YSSL_SOCKET skt);
+int yTcpDownloadSSLCert(const char* host, int port, u64 mstimeout, u8* buffer, u32 maxsize, u32* neededsize, char* errmsg);
 
 
 /*
  * some helper function that need to be called after yTcpInitSSL()
  */
-int yssl_generate_private_key(const char* keyfile, char* errmsg);
+int yssl_generate_private_key(const char* keyfile, u32 nbits, char* errmsg);
 int yssl_write_certificate(void* crt, const char* certfilename, char* errmsg);
 int yssl_generate_certificate(const char* keyfile, const char* certfile,
                               const char* country, const char* state,

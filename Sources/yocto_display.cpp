@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_display.cpp 44049 2021-02-26 10:57:40Z web $
+ * $Id: yocto_display.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  * Implements yFindDisplay(), the high-level API for Display functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_display.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "display"
@@ -850,7 +851,7 @@ int YDisplay::set_brightness(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("brightness", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -908,7 +909,7 @@ int YDisplay::set_orientation(Y_ORIENTATION_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("orientation", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

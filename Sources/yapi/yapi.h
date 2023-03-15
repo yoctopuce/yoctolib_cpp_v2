@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.h 45011 2021-05-10 18:24:41Z web $
+ * $Id: yapi.h 51664 2022-11-21 07:55:50Z seb $
  *
  * Declaration of public entry points to the low-level API
  *
@@ -128,7 +128,13 @@ YRETCODE YAPI_FUNCTION_EXPORT yapiInitAPI(int type, char* errmsg);
 
 YRETCODE YAPI_FUNCTION_EXPORT yapiInitAPIEx(int detect_type, const char* certfile, const char* keyfile, char* errmsg);
 
-YRETCODE YAPI_FUNCTION_EXPORT yapiSetSSLCertificate(const char* certfile, const char* keyfile, char* errmsg);
+YRETCODE YAPI_FUNCTION_EXPORT yapiSetSSLCertificateSrv(const char* certfile, const char* keyfile, char* errmsg);
+YRETCODE YAPI_FUNCTION_EXPORT yapiAddSSLCertificateCli(const char* cert, int cert_len, char* errmsg);
+#define YSSL_NO_TRUSTED_CA_CHECK     1
+#define YSSL_NO_EXPIRATION_CHECK     2
+#define YSSL_NO_HOSTNAME_CHECK       4
+YRETCODE YAPI_FUNCTION_EXPORT yapiSetNetworkSecurityOptions(u32 options, char *errmsg);
+YRETCODE YAPI_FUNCTION_EXPORT yapiGetRemoteCertificate(const char* rooturl, u64 mstimout, char* buffer, int maxsize, int* neededsize, char* errmsg);
 
 
 /*****************************************************************************

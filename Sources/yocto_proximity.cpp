@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_proximity.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_proximity.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindProximity(), the high-level API for Proximity functions
  *
@@ -85,7 +85,7 @@ const double YProximity::SIGNALVALUE_INVALID = YAPI_INVALID_DOUBLE;
 int YProximity::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("signalValue")) {
-        _signalValue =  floor(json_val->getDouble("signalValue") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _signalValue =  floor(json_val->getDouble("signalValue") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("detectionThreshold")) {
         _detectionThreshold =  json_val->getInt("detectionThreshold");
@@ -201,7 +201,7 @@ int YProximity::set_detectionThreshold(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("detectionThreshold", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -262,7 +262,7 @@ int YProximity::set_detectionHysteresis(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("detectionHysteresis", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -319,7 +319,7 @@ int YProximity::set_presenceMinTime(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("presenceMinTime", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -376,7 +376,7 @@ int YProximity::set_removalMinTime(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("removalMinTime", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -519,7 +519,7 @@ int YProximity::set_pulseCounter(s64 newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%u", (u32)newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%u", (u32)newval); rest_val = string(buf);
         res = _setAttr("pulseCounter", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -612,7 +612,7 @@ int YProximity::set_proximityReportMode(Y_PROXIMITYREPORTMODE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("proximityReportMode", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

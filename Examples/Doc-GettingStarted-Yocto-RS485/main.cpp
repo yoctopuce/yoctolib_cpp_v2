@@ -1,13 +1,13 @@
 /*********************************************************************
  *
- *  $Id: main.cpp 32619 2018-10-10 12:22:50Z seb $
+ *  $Id: main.cpp 52593 2023-01-03 15:21:36Z seb $
  *
  *  An example that show how to use a  Yocto-RS485
  *
  *  You can find more information on our web site:
  *   Yocto-RS485 documentation:
  *      https://www.yoctopuce.com/EN/products/yocto-rs485/doc.html
- *   C++ API Reference:
+ *   C++ V2 API Reference:
  *      https://www.yoctopuce.com/EN/doc/reference/yoctolib-cpp-EN.html
  *
  *********************************************************************/
@@ -51,8 +51,8 @@ int main(int argc, const char * argv[])
     cin >> slave;
   } while(slave < 1 || slave > 255);
   do {
-    cout << "Please select a Coil No (>=1), Input Bit No (>=10001+)," << endl;
-    cout << "       Input Register No (>=30001) or Register No (>=40001)" << endl;
+    cout << "Please select a Coil No (>=1), Input Bit No (>=10001)," << endl;
+    cout << "Input Register No (>=30001) or Holding Register No (>=40001)" << endl;
     cout << "No: " ;
     cin >> reg;
   } while(reg < 1 || reg >= 50000 || (reg % 10000) == 0);
@@ -68,16 +68,16 @@ int main(int argc, const char * argv[])
     }
     cout << "Current value: " << val << endl;
     cout << "Press R to read again, Q to quit";
-    if((reg % 30000) < 10000) {
+    if((reg % 40000) < 10000) {
       cout << " or enter a new value";
     }
     cout << ": " << endl;
     cin >> cmd;
     if(cmd == "q" || cmd == "Q") break;
-    if (cmd != "r" && cmd != "R" && (reg % 30000) < 10000) {
+    if (cmd != "r" && cmd != "R" && (reg % 40000) < 10000) {
       val = atoi(cmd.c_str());
-      if(reg >= 30001) {
-        serialPort->modbusWriteRegister(slave, reg - 30001, val);
+      if(reg >= 40001) {
+        serialPort->modbusWriteRegister(slave, reg - 40001, val);
       } else {
         serialPort->modbusWriteBit(slave, reg - 1, val);
       }

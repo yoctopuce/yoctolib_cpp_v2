@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_voltageoutput.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_voltageoutput.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindVoltageOutput(), the high-level API for VoltageOutput functions
  *
@@ -78,13 +78,13 @@ const double YVoltageOutput::VOLTAGEATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
 int YVoltageOutput::_parseAttr(YJSONObject *json_val)
 {
     if(json_val->has("currentVoltage")) {
-        _currentVoltage =  floor(json_val->getDouble("currentVoltage") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _currentVoltage =  floor(json_val->getDouble("currentVoltage") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("voltageTransition")) {
         _voltageTransition =  json_val->getString("voltageTransition");
     }
     if(json_val->has("voltageAtStartUp")) {
-        _voltageAtStartUp =  floor(json_val->getDouble("voltageAtStartUp") * 1000.0 / 65536.0 + 0.5) / 1000.0;
+        _voltageAtStartUp =  floor(json_val->getDouble("voltageAtStartUp") / 65.536 + 0.5) / 1000.0;
     }
     return YFunction::_parseAttr(json_val);
 }
@@ -105,7 +105,7 @@ int YVoltageOutput::set_currentVoltage(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("currentVoltage", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -198,7 +198,7 @@ int YVoltageOutput::set_voltageAtStartUp(double newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
         res = _setAttr("voltageAtStartUp", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

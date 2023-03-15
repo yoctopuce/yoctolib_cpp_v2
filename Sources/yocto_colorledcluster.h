@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_colorledcluster.h 44980 2021-05-10 11:24:42Z web $
+ *  $Id: yocto_colorledcluster.h 50326 2022-07-01 09:33:24Z seb $
  *
  *  Declares yFindColorLedCluster(), the high-level API for ColorLedCluster functions
  *
@@ -70,6 +70,7 @@ typedef enum {
 #endif
 #define Y_ACTIVELEDCOUNT_INVALID        (YAPI_INVALID_UINT)
 #define Y_MAXLEDCOUNT_INVALID           (YAPI_INVALID_UINT)
+#define Y_DYNAMICLEDCOUNT_INVALID       (YAPI_INVALID_UINT)
 #define Y_BLINKSEQMAXCOUNT_INVALID      (YAPI_INVALID_UINT)
 #define Y_BLINKSEQMAXSIZE_INVALID       (YAPI_INVALID_UINT)
 #define Y_COMMAND_INVALID               (YAPI_INVALID_STRING)
@@ -78,7 +79,7 @@ typedef enum {
 //--- (YColorLedCluster declaration)
 /**
  * YColorLedCluster Class: RGB LED cluster control interface, available for instance in the
- * Yocto-Color-V2 or the Yocto-MaxiBuzzer
+ * Yocto-Color-V2, the Yocto-MaxiBuzzer or the Yocto-MaxiKnob
  *
  * The YColorLedCluster class allows you to drive a
  * color LED cluster. Unlike the ColorLed class, the YColorLedCluster
@@ -100,6 +101,7 @@ protected:
     int             _activeLedCount;
     Y_LEDTYPE_enum  _ledType;
     int             _maxLedCount;
+    int             _dynamicLedCount;
     int             _blinkSeqMaxCount;
     int             _blinkSeqMaxSize;
     string          _command;
@@ -125,6 +127,7 @@ public:
     static const Y_LEDTYPE_enum LEDTYPE_WS2811 = Y_LEDTYPE_WS2811;
     static const Y_LEDTYPE_enum LEDTYPE_INVALID = Y_LEDTYPE_INVALID;
     static const int MAXLEDCOUNT_INVALID = YAPI_INVALID_UINT;
+    static const int DYNAMICLEDCOUNT_INVALID = YAPI_INVALID_UINT;
     static const int BLINKSEQMAXCOUNT_INVALID = YAPI_INVALID_UINT;
     static const int BLINKSEQMAXSIZE_INVALID = YAPI_INVALID_UINT;
     static const string COMMAND_INVALID;
@@ -196,6 +199,19 @@ public:
 
     inline int          maxLedCount(void)
     { return this->get_maxLedCount(); }
+
+    /**
+     * Returns the maximum number of LEDs that can perform autonomous transitions and sequences.
+     *
+     * @return an integer corresponding to the maximum number of LEDs that can perform autonomous
+     * transitions and sequences
+     *
+     * On failure, throws an exception or returns YColorLedCluster::DYNAMICLEDCOUNT_INVALID.
+     */
+    int                 get_dynamicLedCount(void);
+
+    inline int          dynamicLedCount(void)
+    { return this->get_dynamicLedCount(); }
 
     /**
      * Returns the maximum number of sequences that the device can handle.

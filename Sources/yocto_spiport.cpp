@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_spiport.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_spiport.cpp 53034 2023-02-02 10:16:55Z seb $
  *
  *  Implements yFindSpiPort(), the high-level API for SpiPort functions
  *
@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include "yocto_spiport.h"
+#include "yapi/yproto.h"
 #include "yapi/yjson.h"
 #include "yapi/yapi.h"
 #define  __FILE_ID__  "spiport"
@@ -146,6 +147,7 @@ YSpiPort::YSpiPort(const string& func): YFunction(func)
     ,_valueCallbackSpiPort(NULL)
     ,_rxptr(0)
     ,_rxbuffptr(0)
+    ,_eventPos(0)
 //--- (end of generated code: YSpiPort initialization)
 {
     _className="SpiPort";
@@ -671,8 +673,8 @@ int YSpiPort::set_protocol(const string& newval)
  *
  * @return a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
  * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
- * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
- * corresponding to the voltage level used on the serial line
+ * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485, YSpiPort::VOLTAGELEVEL_TTL1V8 and
+ * YSpiPort::VOLTAGELEVEL_SDI12 corresponding to the voltage level used on the serial line
  *
  * On failure, throws an exception or returns YSpiPort::VOLTAGELEVEL_INVALID.
  */
@@ -709,8 +711,8 @@ Y_VOLTAGELEVEL_enum YSpiPort::get_voltageLevel(void)
  *
  * @param newval : a value among YSpiPort::VOLTAGELEVEL_OFF, YSpiPort::VOLTAGELEVEL_TTL3V,
  * YSpiPort::VOLTAGELEVEL_TTL3VR, YSpiPort::VOLTAGELEVEL_TTL5V, YSpiPort::VOLTAGELEVEL_TTL5VR,
- * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485 and YSpiPort::VOLTAGELEVEL_TTL1V8
- * corresponding to the voltage type used on the serial line
+ * YSpiPort::VOLTAGELEVEL_RS232, YSpiPort::VOLTAGELEVEL_RS485, YSpiPort::VOLTAGELEVEL_TTL1V8 and
+ * YSpiPort::VOLTAGELEVEL_SDI12 corresponding to the voltage type used on the serial line
  *
  * @return YAPI::SUCCESS if the call succeeds.
  *
@@ -722,7 +724,7 @@ int YSpiPort::set_voltageLevel(Y_VOLTAGELEVEL_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("voltageLevel", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -1125,16 +1127,29 @@ int YSpiPort::read_tell(void)
  */
 int YSpiPort::read_avail(void)
 {
-    string buff;
-    int bufflen = 0;
+    string availPosStr;
+    int atPos = 0;
     int res = 0;
+    string databin;
 
-    buff = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
-    bufflen = (int)(buff).size() - 1;
-    while ((bufflen > 0) && (((u8)buff[bufflen]) != 64)) {
-        bufflen = bufflen - 1;
-    }
-    res = atoi(((buff).substr( 0, bufflen)).c_str());
+    databin = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
+    availPosStr = databin;
+    atPos = _ystrpos(availPosStr, "@");
+    res = atoi(((availPosStr).substr( 0, atPos)).c_str());
+    return res;
+}
+
+int YSpiPort::end_tell(void)
+{
+    string availPosStr;
+    int atPos = 0;
+    int res = 0;
+    string databin;
+
+    databin = this->_download(YapiWrapper::ysprintf("rxcnt.bin?pos=%d",_rxptr));
+    availPosStr = databin;
+    atPos = _ystrpos(availPosStr, "@");
+    res = atoi(((availPosStr).substr( atPos+1, (int)(availPosStr).length()-atPos-1)).c_str());
     return res;
 }
 
@@ -1152,13 +1167,22 @@ int YSpiPort::read_avail(void)
  */
 string YSpiPort::queryLine(string query,int maxWait)
 {
+    int prevpos = 0;
     string url;
     string msgbin;
     vector<string> msgarr;
     int msglen = 0;
     string res;
+    if ((int)(query).length() <= 80) {
+        // fast query
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=!%s", maxWait,this->_escapeAttr(query).c_str());
+    } else {
+        // long query
+        prevpos = this->end_tell();
+        this->_upload("txdata", query + "\r\n");
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&pos=%d", maxWait,prevpos);
+    }
 
-    url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=!%s", maxWait,this->_escapeAttr(query).c_str());
     msgbin = this->_download(url);
     msgarr = this->_json_get_array(msgbin);
     msglen = (int)msgarr.size();
@@ -1190,13 +1214,22 @@ string YSpiPort::queryLine(string query,int maxWait)
  */
 string YSpiPort::queryHex(string hexString,int maxWait)
 {
+    int prevpos = 0;
     string url;
     string msgbin;
     vector<string> msgarr;
     int msglen = 0;
     string res;
+    if ((int)(hexString).length() <= 80) {
+        // fast query
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=$%s", maxWait,hexString.c_str());
+    } else {
+        // long query
+        prevpos = this->end_tell();
+        this->_upload("txdata", YAPI::_hexStr2Bin(hexString));
+        url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&pos=%d", maxWait,prevpos);
+    }
 
-    url = YapiWrapper::ysprintf("rxmsg.json?len=1&maxw=%d&cmd=$%s", maxWait,hexString.c_str());
     msgbin = this->_download(url);
     msgarr = this->_json_get_array(msgbin);
     msglen = (int)msgarr.size();
@@ -1255,6 +1288,7 @@ int YSpiPort::selectJob(string jobfile)
  */
 int YSpiPort::reset(void)
 {
+    _eventPos = 0;
     _rxptr = 0;
     _rxbuffptr = 0;
     _rxbuff = string(0, (char)0);

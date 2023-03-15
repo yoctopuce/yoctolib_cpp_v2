@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef_private.h 44979 2021-05-10 11:00:58Z web $
+ * $Id: ydef_private.h 50509 2022-07-20 09:32:07Z seb $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -46,51 +46,55 @@ extern "C" {
 #include "ydef.h"
 
 #if defined(WINDOWS_API)
-#if defined(__64BITS__)
-typedef u64 BSD_SOCKET;
+    #if defined(__64BITS__)
+        typedef u64 BSD_SOCKET;
+    #else
+        typedef u32 BSD_SOCKET;
+    #endif
+    #define INVALID_BSD_SOCKET  ((BSD_SOCKET)(~0))
 #else
-typedef u32 BSD_SOCKET;
-#endif
-#define INVALID_BSD_SOCKET  ((BSD_SOCKET)(~0))
-#else
-typedef int BSD_SOCKET;
-#define INVALID_BSD_SOCKET (-1)
+    typedef int BSD_SOCKET;
+    #define INVALID_BSD_SOCKET (-1)
 #endif
 
-#if 0
 #if defined(WINDOWS_API) && (_MSC_VER)
-#define YDEBUG_BREAK { __debugbreak();}
+    #define YBKPT { __debugbreak();}
 #else
-#if defined(FREERTOS_API)
-#define YDEBUG_BREAK  {__asm__("BKPT");}
-#else
-#define YDEBUG_BREAK  {__asm__("int3");}
-#endif
-#endif
-#else
-#define YDEBUG_BREAK {}
+    #if defined(TEXAS_API)
+        #define YBKPT  {__asm__("BKPT");}
+    #else
+        #define YBKPT  {__asm__("int3");}
+    #endif
 #endif
 
-#if defined(MICROCHIP_API) || defined(FREERTOS_API) || defined(VIRTUAL_HUB)
-#define YAPI_IN_YDEVICE
-#define YSTATIC
+#if defined(MICROCHIP_API) || defined(TEXAS_API) || defined(VIRTUAL_HUB)
+    #define YAPI_IN_YDEVICE
+    #define YSTATIC
 #else
-#define YSTATIC static
+    #define YSTATIC static
 #endif
 
 #if defined(MICROCHIP_API)
-void ypanic(int line);
-#define YPANIC panic(__LINE__)
+    void ypanic(int line);
+    #define YPANIC              panic(__LINE__)
 #else
-void ypanic(const char* file, int line);
-#ifdef FREERTOS_API
-#ifndef __FILE_ID__
-#define __FILE_ID__ __FILE__
-#endif
-#define YPANIC {YDEBUG_BREAK;ypanic(__FILE_ID__,__LINE__);}
-#else
-#define YPANIC YDEBUG_BREAK
-#endif
+    #ifdef YAPI_IN_YDEVICE
+        #ifdef EMBEDDED_API
+            void ypanic(u32 origin, u32 irritant);
+        #else
+            void ypanic(u32 origin, u64 irritant);
+        #endif
+        #define MK_FILEID(a,b,c)    ((((a)-'A')<<10) | (((b)-'A')<<5) | ((c)-'A'))
+        #define MK_ORIGIN(fid,n)    (((fid) << 16) | (n))
+        #define MK_CURPOS           MK_ORIGIN(__FILE_ID__, __LINE__)
+        #define YPANIC              do { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__) ,0); } while(0)
+        #define YPANIC_IRR(irr)     do { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__) ,irr); } while(0)
+        #define YASSERT(x,irr)      if(!(x)) { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__), irr); }
+    #else
+        #define YPANIC                  {dbglog("YPANIC:%s:%d\n",__FILENAME__ , __LINE__);}
+        #define YPANIC_IRR(irr)         YPANIC
+        #define YASSERT(x, irr)         if(!(x)){dbglog("ASSERT FAILED:%s:%d (%" FMTx64 ")\n",__FILENAME__ , __LINE__, (u64) (irr));}
+    #endif
 #endif
 
 #ifdef  __cplusplus

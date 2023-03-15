@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_led.cpp 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_led.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindLed(), the high-level API for Led functions
  *
@@ -186,7 +186,7 @@ int YLed::set_luminosity(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("luminosity", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -242,7 +242,7 @@ int YLed::set_blinking(Y_BLINKING_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("blinking", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_colorledcluster.cpp 44980 2021-05-10 11:24:42Z web $
+ *  $Id: yocto_colorledcluster.cpp 52570 2022-12-26 09:27:54Z seb $
  *
  *  Implements yFindColorLedCluster(), the high-level API for ColorLedCluster functions
  *
@@ -58,6 +58,7 @@ YColorLedCluster::YColorLedCluster(const string& func): YFunction(func)
     ,_activeLedCount(ACTIVELEDCOUNT_INVALID)
     ,_ledType(LEDTYPE_INVALID)
     ,_maxLedCount(MAXLEDCOUNT_INVALID)
+    ,_dynamicLedCount(DYNAMICLEDCOUNT_INVALID)
     ,_blinkSeqMaxCount(BLINKSEQMAXCOUNT_INVALID)
     ,_blinkSeqMaxSize(BLINKSEQMAXSIZE_INVALID)
     ,_command(COMMAND_INVALID)
@@ -86,6 +87,9 @@ int YColorLedCluster::_parseAttr(YJSONObject *json_val)
     }
     if(json_val->has("maxLedCount")) {
         _maxLedCount =  json_val->getInt("maxLedCount");
+    }
+    if(json_val->has("dynamicLedCount")) {
+        _dynamicLedCount =  json_val->getInt("dynamicLedCount");
     }
     if(json_val->has("blinkSeqMaxCount")) {
         _blinkSeqMaxCount =  json_val->getInt("blinkSeqMaxCount");
@@ -146,7 +150,7 @@ int YColorLedCluster::set_activeLedCount(int newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("activeLedCount", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -204,7 +208,7 @@ int YColorLedCluster::set_ledType(Y_LEDTYPE_enum newval)
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
-        char buf[32]; sprintf(buf, "%d", newval); rest_val = string(buf);
+        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
         res = _setAttr("ledType", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
@@ -235,6 +239,36 @@ int YColorLedCluster::get_maxLedCount(void)
             }
         }
         res = _maxLedCount;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the maximum number of LEDs that can perform autonomous transitions and sequences.
+ *
+ * @return an integer corresponding to the maximum number of LEDs that can perform autonomous
+ * transitions and sequences
+ *
+ * On failure, throws an exception or returns YColorLedCluster::DYNAMICLEDCOUNT_INVALID.
+ */
+int YColorLedCluster::get_dynamicLedCount(void)
+{
+    int res = 0;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration == 0) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YColorLedCluster::DYNAMICLEDCOUNT_INVALID;
+                }
+            }
+        }
+        res = _dynamicLedCount;
     } catch (std::exception &) {
         yLeaveCriticalSection(&_this_cs);
         throw;

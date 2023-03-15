@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ykey.c 44979 2021-05-10 11:00:58Z web $
+ * $Id: ykey.c 51526 2022-11-07 14:44:43Z seb $
  *
  * Implementation of standard key computations
  *
@@ -36,11 +36,15 @@
  *  WARRANTY, OR OTHERWISE.
  *
  *********************************************************************/
-#define __FILE_ID__  "ydef"
+
+#include "ydef_private.h"
+#define __FILE_ID__     MK_FILEID('Y','K','Y')
+#define __FILENAME__   "ykey"
+
 #include "ykey.h"
 
 #ifdef MICROCHIP_API
-#include "Yocto/yocto.h"
+#include "yocto.h"
 #include "Yocto/yapi_ext.h"
 #define ntohl(dw) swapl(dw)
 #else
@@ -270,10 +274,11 @@ extern u32 yapiGetCNonce(u32 nc);
 
 // Write an authorization header in the buffer provided
 // method and uri can be provided in the same memory zone as destination if needed
-void yDigestAuthorization(char* buf, int bufsize, const char* user, const char* realm, const u8* ha1,
+int yDigestAuthorization(char* buf, int bufsize, const char* user, const char* realm, const u8* ha1,
                           const char* nonce, const char* opaque, u32* nc, const char* method, const char* uri)
 {
     u32 cnonce;
+    const char *org_buf = buf;
     char ncbuf[9], cnoncebuf[9];
     u8 ha2[HTTP_AUTH_MD5_SIZE];
     int len;
@@ -313,6 +318,7 @@ void yDigestAuthorization(char* buf, int bufsize, const char* user, const char* 
         YSTRCAT(buf, bufsize, opaque);
     }
     YSTRCAT(buf, bufsize, "\"\r\n");
+    return  (int)strlen(org_buf);
 }
 
 // State variables used during key computation
@@ -326,7 +332,7 @@ typedef struct {
     u8 res[32];
 } WPA_CALC_STATE;
 
-static WPA_CALC_STATE wpak = {-1};
+static WPA_CALC_STATE wpak = {-1,0,{0},{0},{0},{0},{0}};
 
 const u32 sha1_init[5] = {0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0};
 

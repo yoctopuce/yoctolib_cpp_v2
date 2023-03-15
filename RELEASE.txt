@@ -1,3 +1,5 @@
-CPP2 v2.0.45343
+CPP2 v2.0.53532
 
-- Add Example for Yocto-MaxiKnob
+- Add YAPI::SetNetworkSecurityOptions, YAPI::DownloadHostCertificate and YAPI::AddTrustedCertificates methods
+- Fix TLS/SSL certificate validation of virtualhost HTTP servers
+- Port fix from v1

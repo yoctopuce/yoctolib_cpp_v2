@@ -59,7 +59,7 @@ namespace YOCTOLIB_NAMESPACE
 class YInputChain; // forward declaration
 
 typedef void (*YInputChainValueCallback)(YInputChain *func, const string& functionValue);
-typedef void (*YEventCallback)(YInputChain *inputChain, int timestamp, const string& eventType, const string& eventData, const string& eventChange);
+typedef void (*YStateChangeCallback)(YInputChain *obj, int timestamp, const string& eventType, const string& eventData, const string& eventChange);
 
 #ifndef _Y_LOOPBACKTEST_ENUM
 #define _Y_LOOPBACKTEST_ENUM
@@ -114,7 +114,7 @@ protected:
     int             _watchdogPeriod;
     int             _chainDiags;
     YInputChainValueCallback _valueCallbackInputChain;
-    YEventCallback  _eventCallback;
+    YStateChangeCallback _stateChangeCallback;
     int             _prevPos;
     int             _eventPos;
     int             _eventStamp;
@@ -208,6 +208,9 @@ public:
      * Changes the activation state of the exhaustive chain connectivity test.
      * The connectivity test requires a cable connecting the end of the chain
      * to the loopback test connector.
+     *
+     * If you want the change to be kept after a device reboot,
+     * make sure  to call the matching module saveToFlash().
      *
      * @param newval : either YInputChain::LOOPBACKTEST_OFF or YInputChain::LOOPBACKTEST_ON, according to
      * the activation state of the exhaustive chain connectivity test
@@ -482,7 +485,7 @@ public:
      *         the type of event and a character string with the event data.
      *         On failure, throws an exception or returns a negative error code.
      */
-    virtual int         registerEventCallback(YEventCallback callback);
+    virtual int         registerStateChangeCallback(YStateChangeCallback callback);
 
     virtual int         _internalEventHandler(string cbpos);
 

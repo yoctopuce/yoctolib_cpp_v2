@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_powersupply.h 44049 2021-02-26 10:57:40Z web $
+ *  $Id: yocto_powersupply.h 55635 2023-07-26 09:20:02Z seb $
  *
  *  Declares yFindPowerSupply(), the high-level API for PowerSupply functions
  *
@@ -67,24 +67,22 @@ typedef enum {
     Y_POWEROUTPUT_INVALID = -1,
 } Y_POWEROUTPUT_enum;
 #endif
-#ifndef _Y_VOLTAGESENSE_ENUM
-#define _Y_VOLTAGESENSE_ENUM
+#ifndef _Y_POWEROUTPUTATSTARTUP_ENUM
+#define _Y_POWEROUTPUTATSTARTUP_ENUM
 typedef enum {
-    Y_VOLTAGESENSE_INT = 0,
-    Y_VOLTAGESENSE_EXT = 1,
-    Y_VOLTAGESENSE_INVALID = -1,
-} Y_VOLTAGESENSE_enum;
+    Y_POWEROUTPUTATSTARTUP_OFF = 0,
+    Y_POWEROUTPUTATSTARTUP_ON = 1,
+    Y_POWEROUTPUTATSTARTUP_INVALID = -1,
+} Y_POWEROUTPUTATSTARTUP_enum;
 #endif
-#define Y_VOLTAGESETPOINT_INVALID       (YAPI_INVALID_DOUBLE)
+#define Y_VOLTAGELIMIT_INVALID          (YAPI_INVALID_DOUBLE)
 #define Y_CURRENTLIMIT_INVALID          (YAPI_INVALID_DOUBLE)
 #define Y_MEASUREDVOLTAGE_INVALID       (YAPI_INVALID_DOUBLE)
 #define Y_MEASUREDCURRENT_INVALID       (YAPI_INVALID_DOUBLE)
 #define Y_INPUTVOLTAGE_INVALID          (YAPI_INVALID_DOUBLE)
-#define Y_VINT_INVALID                  (YAPI_INVALID_DOUBLE)
-#define Y_LDOTEMPERATURE_INVALID        (YAPI_INVALID_DOUBLE)
 #define Y_VOLTAGETRANSITION_INVALID     (YAPI_INVALID_STRING)
-#define Y_VOLTAGEATSTARTUP_INVALID      (YAPI_INVALID_DOUBLE)
-#define Y_CURRENTATSTARTUP_INVALID      (YAPI_INVALID_DOUBLE)
+#define Y_VOLTAGELIMITATSTARTUP_INVALID (YAPI_INVALID_DOUBLE)
+#define Y_CURRENTLIMITATSTARTUP_INVALID (YAPI_INVALID_DOUBLE)
 #define Y_COMMAND_INVALID               (YAPI_INVALID_STRING)
 //--- (end of YPowerSupply definitions)
 
@@ -93,8 +91,8 @@ typedef enum {
  * YPowerSupply Class: regulated power supply control interface
  *
  * The YPowerSupply class allows you to drive a Yoctopuce power supply.
- * It can be use to change the voltage set point,
- * the current limit and the enable/disable the output.
+ * It can be use to change the voltage and current limits, and to enable/disable
+ * the output.
  */
 class YOCTO_CLASS_EXPORT YPowerSupply: public YFunction {
 #ifdef __BORLANDC__
@@ -104,18 +102,16 @@ class YOCTO_CLASS_EXPORT YPowerSupply: public YFunction {
 protected:
     //--- (YPowerSupply attributes)
     // Attributes (function value cache)
-    double          _voltageSetPoint;
+    double          _voltageLimit;
     double          _currentLimit;
     Y_POWEROUTPUT_enum _powerOutput;
-    Y_VOLTAGESENSE_enum _voltageSense;
     double          _measuredVoltage;
     double          _measuredCurrent;
     double          _inputVoltage;
-    double          _vInt;
-    double          _ldoTemperature;
     string          _voltageTransition;
-    double          _voltageAtStartUp;
-    double          _currentAtStartUp;
+    double          _voltageLimitAtStartUp;
+    double          _currentLimitAtStartUp;
+    Y_POWEROUTPUTATSTARTUP_enum _powerOutputAtStartUp;
     string          _command;
     YPowerSupplyValueCallback _valueCallbackPowerSupply;
 
@@ -133,48 +129,46 @@ public:
     virtual ~YPowerSupply();
     //--- (YPowerSupply accessors declaration)
 
-    static const double VOLTAGESETPOINT_INVALID;
+    static const double VOLTAGELIMIT_INVALID;
     static const double CURRENTLIMIT_INVALID;
     static const Y_POWEROUTPUT_enum POWEROUTPUT_OFF = Y_POWEROUTPUT_OFF;
     static const Y_POWEROUTPUT_enum POWEROUTPUT_ON = Y_POWEROUTPUT_ON;
     static const Y_POWEROUTPUT_enum POWEROUTPUT_INVALID = Y_POWEROUTPUT_INVALID;
-    static const Y_VOLTAGESENSE_enum VOLTAGESENSE_INT = Y_VOLTAGESENSE_INT;
-    static const Y_VOLTAGESENSE_enum VOLTAGESENSE_EXT = Y_VOLTAGESENSE_EXT;
-    static const Y_VOLTAGESENSE_enum VOLTAGESENSE_INVALID = Y_VOLTAGESENSE_INVALID;
     static const double MEASUREDVOLTAGE_INVALID;
     static const double MEASUREDCURRENT_INVALID;
     static const double INPUTVOLTAGE_INVALID;
-    static const double VINT_INVALID;
-    static const double LDOTEMPERATURE_INVALID;
     static const string VOLTAGETRANSITION_INVALID;
-    static const double VOLTAGEATSTARTUP_INVALID;
-    static const double CURRENTATSTARTUP_INVALID;
+    static const double VOLTAGELIMITATSTARTUP_INVALID;
+    static const double CURRENTLIMITATSTARTUP_INVALID;
+    static const Y_POWEROUTPUTATSTARTUP_enum POWEROUTPUTATSTARTUP_OFF = Y_POWEROUTPUTATSTARTUP_OFF;
+    static const Y_POWEROUTPUTATSTARTUP_enum POWEROUTPUTATSTARTUP_ON = Y_POWEROUTPUTATSTARTUP_ON;
+    static const Y_POWEROUTPUTATSTARTUP_enum POWEROUTPUTATSTARTUP_INVALID = Y_POWEROUTPUTATSTARTUP_INVALID;
     static const string COMMAND_INVALID;
 
     /**
-     * Changes the voltage set point, in V.
+     * Changes the voltage limit, in V.
      *
-     * @param newval : a floating point number corresponding to the voltage set point, in V
+     * @param newval : a floating point number corresponding to the voltage limit, in V
      *
      * @return YAPI::SUCCESS if the call succeeds.
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    int             set_voltageSetPoint(double newval);
-    inline int      setVoltageSetPoint(double newval)
-    { return this->set_voltageSetPoint(newval); }
+    int             set_voltageLimit(double newval);
+    inline int      setVoltageLimit(double newval)
+    { return this->set_voltageLimit(newval); }
 
     /**
-     * Returns the voltage set point, in V.
+     * Returns the voltage limit, in V.
      *
-     * @return a floating point number corresponding to the voltage set point, in V
+     * @return a floating point number corresponding to the voltage limit, in V
      *
-     * On failure, throws an exception or returns YPowerSupply::VOLTAGESETPOINT_INVALID.
+     * On failure, throws an exception or returns YPowerSupply::VOLTAGELIMIT_INVALID.
      */
-    double              get_voltageSetPoint(void);
+    double              get_voltageLimit(void);
 
-    inline double       voltageSetPoint(void)
-    { return this->get_voltageSetPoint(); }
+    inline double       voltageLimit(void)
+    { return this->get_voltageLimit(); }
 
     /**
      * Changes the current limit, in mA.
@@ -229,33 +223,6 @@ public:
     { return this->set_powerOutput(newval); }
 
     /**
-     * Returns the output voltage control point.
-     *
-     * @return either YPowerSupply::VOLTAGESENSE_INT or YPowerSupply::VOLTAGESENSE_EXT, according to the
-     * output voltage control point
-     *
-     * On failure, throws an exception or returns YPowerSupply::VOLTAGESENSE_INVALID.
-     */
-    Y_VOLTAGESENSE_enum get_voltageSense(void);
-
-    inline Y_VOLTAGESENSE_enum voltageSense(void)
-    { return this->get_voltageSense(); }
-
-    /**
-     * Changes the voltage control point.
-     *
-     * @param newval : either YPowerSupply::VOLTAGESENSE_INT or YPowerSupply::VOLTAGESENSE_EXT, according to
-     * the voltage control point
-     *
-     * @return YAPI::SUCCESS if the call succeeds.
-     *
-     * On failure, throws an exception or returns a negative error code.
-     */
-    int             set_voltageSense(Y_VOLTAGESENSE_enum newval);
-    inline int      setVoltageSense(Y_VOLTAGESENSE_enum newval)
-    { return this->set_voltageSense(newval); }
-
-    /**
      * Returns the measured output voltage, in V.
      *
      * @return a floating point number corresponding to the measured output voltage, in V
@@ -291,30 +258,6 @@ public:
     inline double       inputVoltage(void)
     { return this->get_inputVoltage(); }
 
-    /**
-     * Returns the internal voltage, in V.
-     *
-     * @return a floating point number corresponding to the internal voltage, in V
-     *
-     * On failure, throws an exception or returns YPowerSupply::VINT_INVALID.
-     */
-    double              get_vInt(void);
-
-    inline double       vInt(void)
-    { return this->get_vInt(); }
-
-    /**
-     * Returns the LDO temperature, in Celsius.
-     *
-     * @return a floating point number corresponding to the LDO temperature, in Celsius
-     *
-     * On failure, throws an exception or returns YPowerSupply::LDOTEMPERATURE_INVALID.
-     */
-    double              get_ldoTemperature(void);
-
-    inline double       ldoTemperature(void)
-    { return this->get_ldoTemperature(); }
-
     string              get_voltageTransition(void);
 
     inline string       voltageTransition(void)
@@ -334,21 +277,21 @@ public:
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    int             set_voltageAtStartUp(double newval);
-    inline int      setVoltageAtStartUp(double newval)
-    { return this->set_voltageAtStartUp(newval); }
+    int             set_voltageLimitAtStartUp(double newval);
+    inline int      setVoltageLimitAtStartUp(double newval)
+    { return this->set_voltageLimitAtStartUp(newval); }
 
     /**
-     * Returns the selected voltage set point at device startup, in V.
+     * Returns the selected voltage limit at device startup, in V.
      *
-     * @return a floating point number corresponding to the selected voltage set point at device startup, in V
+     * @return a floating point number corresponding to the selected voltage limit at device startup, in V
      *
-     * On failure, throws an exception or returns YPowerSupply::VOLTAGEATSTARTUP_INVALID.
+     * On failure, throws an exception or returns YPowerSupply::VOLTAGELIMITATSTARTUP_INVALID.
      */
-    double              get_voltageAtStartUp(void);
+    double              get_voltageLimitAtStartUp(void);
 
-    inline double       voltageAtStartUp(void)
-    { return this->get_voltageAtStartUp(); }
+    inline double       voltageLimitAtStartUp(void)
+    { return this->get_voltageLimitAtStartUp(); }
 
     /**
      * Changes the current limit at device start up. Remember to call the matching
@@ -360,21 +303,49 @@ public:
      *
      * On failure, throws an exception or returns a negative error code.
      */
-    int             set_currentAtStartUp(double newval);
-    inline int      setCurrentAtStartUp(double newval)
-    { return this->set_currentAtStartUp(newval); }
+    int             set_currentLimitAtStartUp(double newval);
+    inline int      setCurrentLimitAtStartUp(double newval)
+    { return this->set_currentLimitAtStartUp(newval); }
 
     /**
      * Returns the selected current limit at device startup, in mA.
      *
      * @return a floating point number corresponding to the selected current limit at device startup, in mA
      *
-     * On failure, throws an exception or returns YPowerSupply::CURRENTATSTARTUP_INVALID.
+     * On failure, throws an exception or returns YPowerSupply::CURRENTLIMITATSTARTUP_INVALID.
      */
-    double              get_currentAtStartUp(void);
+    double              get_currentLimitAtStartUp(void);
 
-    inline double       currentAtStartUp(void)
-    { return this->get_currentAtStartUp(); }
+    inline double       currentLimitAtStartUp(void)
+    { return this->get_currentLimitAtStartUp(); }
+
+    /**
+     * Returns the power supply output switch state.
+     *
+     * @return either YPowerSupply::POWEROUTPUTATSTARTUP_OFF or YPowerSupply::POWEROUTPUTATSTARTUP_ON,
+     * according to the power supply output switch state
+     *
+     * On failure, throws an exception or returns YPowerSupply::POWEROUTPUTATSTARTUP_INVALID.
+     */
+    Y_POWEROUTPUTATSTARTUP_enum get_powerOutputAtStartUp(void);
+
+    inline Y_POWEROUTPUTATSTARTUP_enum powerOutputAtStartUp(void)
+    { return this->get_powerOutputAtStartUp(); }
+
+    /**
+     * Changes the power supply output switch state at device start up. Remember to call the matching
+     * module saveToFlash() method, otherwise this call has no effect.
+     *
+     * @param newval : either YPowerSupply::POWEROUTPUTATSTARTUP_OFF or
+     * YPowerSupply::POWEROUTPUTATSTARTUP_ON, according to the power supply output switch state at device start up
+     *
+     * @return YAPI::SUCCESS if the call succeeds.
+     *
+     * On failure, throws an exception or returns a negative error code.
+     */
+    int             set_powerOutputAtStartUp(Y_POWEROUTPUTATSTARTUP_enum newval);
+    inline int      setPowerOutputAtStartUp(Y_POWEROUTPUTATSTARTUP_enum newval)
+    { return this->set_powerOutputAtStartUp(newval); }
 
     string              get_command(void);
 

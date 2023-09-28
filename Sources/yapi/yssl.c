@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.c 53508 2023-03-10 09:48:02Z seb $
+ * $Id: yssl.c 56385 2023-09-04 08:40:33Z seb $
  *
  * Implementation of a client TCP stack with SSL
  *
@@ -92,54 +92,6 @@ static void my_debug(void* ctx, int level, const char* file, int line, const cha
 }
 
 #endif
-
-
-
-
-
-
-
-
-
-// Every line ends with `\n`
-// To add more root certificates, just concatenate them.
-const char SSL_CA_PEM[] =
-// yoctopuce-demo root certificate
-"-----BEGIN CERTIFICATE-----\n"
-"MIIF3jCCA8agAwIBAgIQAf1tMPyjylGoG7xkDjUDLTANBgkqhkiG9w0BAQwFADCB\n"
-"iDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0pl\n"
-"cnNleSBDaXR5MR4wHAYDVQQKExVUaGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNV\n"
-"BAMTJVVTRVJUcnVzdCBSU0EgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMTAw\n"
-"MjAxMDAwMDAwWhcNMzgwMTE4MjM1OTU5WjCBiDELMAkGA1UEBhMCVVMxEzARBgNV\n"
-"BAgTCk5ldyBKZXJzZXkxFDASBgNVBAcTC0plcnNleSBDaXR5MR4wHAYDVQQKExVU\n"
-"aGUgVVNFUlRSVVNUIE5ldHdvcmsxLjAsBgNVBAMTJVVTRVJUcnVzdCBSU0EgQ2Vy\n"
-"dGlmaWNhdGlvbiBBdXRob3JpdHkwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIK\n"
-"AoICAQCAEmUXNg7D2wiz0KxXDXbtzSfTTK1Qg2HiqiBNCS1kCdzOiZ/MPans9s/B\n"
-"3PHTsdZ7NygRK0faOca8Ohm0X6a9fZ2jY0K2dvKpOyuR+OJv0OwWIJAJPuLodMkY\n"
-"tJHUYmTbf6MG8YgYapAiPLz+E/CHFHv25B+O1ORRxhFnRghRy4YUVD+8M/5+bJz/\n"
-"Fp0YvVGONaanZshyZ9shZrHUm3gDwFA66Mzw3LyeTP6vBZY1H1dat//O+T23LLb2\n"
-"VN3I5xI6Ta5MirdcmrS3ID3KfyI0rn47aGYBROcBTkZTmzNg95S+UzeQc0PzMsNT\n"
-"79uq/nROacdrjGCT3sTHDN/hMq7MkztReJVni+49Vv4M0GkPGw/zJSZrM233bkf6\n"
-"c0Plfg6lZrEpfDKEY1WJxA3Bk1QwGROs0303p+tdOmw1XNtB1xLaqUkL39iAigmT\n"
-"Yo61Zs8liM2EuLE/pDkP2QKe6xJMlXzzawWpXhaDzLhn4ugTncxbgtNMs+1b/97l\n"
-"c6wjOy0AvzVVdAlJ2ElYGn+SNuZRkg7zJn0cTRe8yexDJtC/QV9AqURE9JnnV4ee\n"
-"UB9XVKg+/XRjL7FQZQnmWEIuQxpMtPAlR1n6BB6T1CZGSlCBst6+eLf8ZxXhyVeE\n"
-"Hg9j1uliutZfVS7qXMYoCAQlObgOK6nyTJccBz8NUvXt7y+CDwIDAQABo0IwQDAd\n"
-"BgNVHQ4EFgQUU3m/WqorSs9UgOHYm8Cd8rIDZsswDgYDVR0PAQH/BAQDAgEGMA8G\n"
-"A1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEMBQADggIBAFzUfA3P9wF9QZllDHPF\n"
-"Up/L+M+ZBn8b2kMVn54CVVeWFPFSPCeHlCjtHzoBN6J2/FNQwISbxmtOuowhT6KO\n"
-"VWKR82kV2LyI48SqC/3vqOlLVSoGIG1VeCkZ7l8wXEskEVX/JJpuXior7gtNn3/3\n"
-"ATiUFJVDBwn7YKnuHKsSjKCaXqeYalltiz8I+8jRRa8YFWSQEg9zKC7F4iRO/Fjs\n"
-"8PRF/iKz6y+O0tlFYQXBl2+odnKPi4w2r78NBc5xjeambx9spnFixdjQg3IM8WcR\n"
-"iQycE0xyNN+81XHfqnHd4blsjDwSXWXavVcStkNr/+XeTWYRUc+ZruwXtuhxkYze\n"
-"Sf7dNXGiFSeUHM9h4ya7b6NnJSFd5t0dCy5oGzuCr+yDZ4XUmFF0sbmZgIn/f3gZ\n"
-"XHlKYC6SQK5MNyosycdiyA5d9zZbyuAlJQG03RoHnHcAP9Dc1ew91Pq7P8yF1m9/\n"
-"qS3fuQL39ZeatTXaw2ewh0qpKJ4jjv9cJ2vhsE/zB+4ALtRZh8tSQZXq9EfX7mRB\n"
-"VXyNWQKV3WKdwrnuWih0hKWbt5DHDAff9Yk2dDLWKMGwsAvgnEzDHNb842m1R0aB\n"
-"L6KCq9NjRHDEjf8tM7qtj3u1cIiuPhnPQCjY/MiQu12ZIvVS5ljFH4gxQ+6IHdfG\n"
-"jjxDah2nGN59PRbxYvnKkKj9\n"
-"-----END CERTIFICATE-----\n"
-;
 
 int yssl_generate_private_key(const char* keyfile, u32 nbits, char* errmsg)
 {
@@ -331,7 +283,7 @@ int yTcpInitSSL(char* errmsg)
 
 #ifdef DEBUG_SSL
     // activate debug logs
-    mbedtls_debug_set_threshold(1);
+    //mbedtls_debug_set_threshold(1);
 #endif
 
 
@@ -354,7 +306,7 @@ int yTcpInitSSL(char* errmsg)
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
     }
-#if 1
+#ifdef ADD_DEFAULT_X509_CERTS
     ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)SSL_CA_PEM,
         sizeof(SSL_CA_PEM));
 
@@ -411,6 +363,7 @@ int yTcpSetSrvCertificateSSL(const char* certfile, const char* keyfile, char* er
 }
 int yTcpAddClientCertificateSSL(const u8* cert, u32 cert_len, char* errmsg)
 {
+    
     int ret = mbedtls_x509_crt_parse(&cachain, (const unsigned char*)cert, cert_len);
     if (ret != 0) {
         return FMT_MBEDTLS_ERR(ret);
@@ -421,13 +374,9 @@ int yTcpAddClientCertificateSSL(const u8* cert, u32 cert_len, char* errmsg)
 int yTcpDownloadSSLCert(const char* host, int port, u64 mstimeout, u8* buffer, u32 maxsize, u32* neededsize, char* errmsg)
 {
     YSSL_SOCKET sslSkt;
-
     const char* pem_begin_crt = "-----BEGIN CERTIFICATE-----\n";
     const char* pem_end_crt = "-----END CERTIFICATE-----\n";
     int res;
-
-
-
     res = yTcpOpenSSL(&sslSkt, host, port, 1, mstimeout, errmsg);
     if (res < 0) {
         return res;
@@ -453,9 +402,12 @@ int yTcpDownloadSSLCert(const char* host, int port, u64 mstimeout, u8* buffer, u
             yTcpCloseSSL(sslSkt);
             return FMT_MBEDTLS_ERR(mbedtls_res);
         } else {
-            *neededsize += (u32)written;
-            buffer += (u32)written;
-            maxsize -= (u32)written;
+            if (written > 0) {
+                written--; //mbedtls_pem_write_buffer return a null terminated string
+                *neededsize += (u32)written;
+                buffer += (u32)written;
+                maxsize -= (u32)written;
+            }
         }
         chain = chain->next;
     }
@@ -541,9 +493,17 @@ static int do_ssl_handshake(YSSL_SOCKET yssl, int skip_cert_validation, char* er
             flags &= ~MBEDTLS_X509_BADCERT_CN_MISMATCH;
         }
         if (flags) {
+            int len;
             mbedtls_x509_crt_verify_info(errmsg, YOCTO_ERRMSG_LEN,
                 "SSL:", flags);
-            //dbglog("%s", errmsg);
+            len = ystrlen(errmsg);
+            while(len > 0 && errmsg[len-1]=='\n') {
+                errmsg[len - 1] = 0;
+                len--;
+            }
+            if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
+                return YAPI_SSL_UNK_CERT;
+            }
             return YAPI_SSL_ERROR;
         }
     }
@@ -579,7 +539,9 @@ static int setup_ssl(yssl_socket_st* yssl, const char * remote_hostname, int ski
     // activate debug logs
     mbedtls_ssl_conf_dbg(yssl->ssl_conf, my_debug, yssl);
 #endif
-    mbedtls_ssl_conf_ca_chain(yssl->ssl_conf, &cachain, NULL);
+    if (!server_mode) {
+        mbedtls_ssl_conf_ca_chain(yssl->ssl_conf, &cachain, NULL);
+    }
     mbedtls_ssl_conf_rng(yssl->ssl_conf, mbedtls_ctr_drbg_random, &ctr_drbg);
 
     if (server_mode) {
@@ -625,7 +587,7 @@ int yTcpOpenSSL(YSSL_SOCKET* newskt, const char* host, u16 port, int skip_cert_v
     int res;
     yssl_socket_st* yssl;
 
-    SSLLOG("YSSL: openssl %p [dst=%d:%d %dms]\n", newskt, ip, port, mstimeout);
+    SSLLOG("YSSL: openssl %p [dst=%s:%d %dms]\n", newskt, host, port, mstimeout);
     yssl = yMalloc(sizeof(yssl_socket_st));
     memset(yssl, 0, sizeof(yssl_socket_st));
 

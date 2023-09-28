@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ytcp.h 53508 2023-03-10 09:48:02Z seb $
+ * $Id: ytcp.h 55428 2023-07-03 14:14:03Z seb $
  *
  *  Declaration of a client TCP stack
  *
@@ -147,6 +147,7 @@ void yTcpShutdownMulti(void);
 
 int yUdpOpenMulti(YSOCKET_MULTI* newskt, IPvX_ADDR* local_ip, u16 local_port, char* errmsg);
 int yUdpWriteMulti(YSOCKET_MULTI skt, IPvX_ADDR* dest_ip, u16 dest_port, const u8* buffer, int len, char* errmsg);
+int yUdpReadMulti(YSOCKET_MULTI skt, u8* buffer, int len, IPvX_ADDR* dest_ip, u16* dest_port, char* errmsg);
 int yUdpRegisterMCAST(YSOCKET_MULTI skt,  IPvX_ADDR *mcastAddr);
 
 struct _RequestSt* yReqAlloc(struct _HubSt* hub);
@@ -176,12 +177,8 @@ typedef struct {
 } os_ifaces;
 
 #ifdef YAPI_IN_YDEVICE
-extern os_ifaces detectedIfaces[];
-extern int nbDetectedIfaces;
-///#warning define dettect
-int yDetectNetworkInterfaces(u32 only_ip);
+int yDetectNetworkInterfaces(u32 only_ip, os_ifaces *interfaces, int max_nb_interfaces);
 #endif
-int yDetectNetworkInterfaces(u32 only_ip);
 
 #define SSDP_UUID_LEN   48
 #define SSDP_URL_LEN    48

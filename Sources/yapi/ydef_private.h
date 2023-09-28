@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef_private.h 50509 2022-07-20 09:32:07Z seb $
+ * $Id: ydef_private.h 55241 2023-06-21 10:00:29Z seb $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -53,8 +53,13 @@ extern "C" {
     #endif
     #define INVALID_BSD_SOCKET  ((BSD_SOCKET)(~0))
 #else
+#ifdef TEXAS_API
+    typedef int16_t BSD_SOCKET;
+    #define INVALID_BSD_SOCKET (-1)
+#else
     typedef int BSD_SOCKET;
     #define INVALID_BSD_SOCKET (-1)
+#endif
 #endif
 
 #if defined(WINDOWS_API) && (_MSC_VER)

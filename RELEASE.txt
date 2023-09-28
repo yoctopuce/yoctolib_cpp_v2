@@ -1,5 +1,3 @@
-CPP2 v2.0.53532
+CPP2 v2.0.56784
 
-- Add YAPI::SetNetworkSecurityOptions, YAPI::DownloadHostCertificate and YAPI::AddTrustedCertificates methods
-- Fix TLS/SSL certificate validation of virtualhost HTTP servers
-- Port fix from v1
+- test build

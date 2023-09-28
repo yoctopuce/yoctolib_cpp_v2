@@ -1,6 +1,6 @@
 # *********************************************************************
 #
-#  $Id: GNUmakefile 52669 2023-01-09 09:50:05Z web $
+#  $Id: GNUmakefile 56369 2023-09-01 08:04:55Z seb $
 #
 #  GNU Makefile for linux and Mac OS X
 #
@@ -208,7 +208,7 @@ OPTS_OSX32 = -m32
 LINKWITH_WIN32 = "Advapi32.lib"
 LINKWITH_WIN64 = "Advapi32.lib"
 LINKWITH_I386 = -lm -lpthread -lusb-1.0
-LINKWITH_X64 = -lm -lpthread -lusb-1.0 -lssl -lcrypto
+LINKWITH_X64 = -lm -lpthread -lusb-1.0
 ifdef TOOLCHAIN_QARM
 LINKWITH_ARMEL = -L$(STAGING_QARM)/usr/lib/ -lm -lpthread -lusb-1.0
 else
@@ -332,6 +332,7 @@ YOCTO_API_OBJS_STAT = yocto_api.o\
 	yocto_hubport.o \
 	yocto_humidity.o \
 	yocto_i2cport.o \
+	yocto_inputcapture.o \
 	yocto_inputchain.o \
 	yocto_latitude.o \
 	yocto_led.o \
@@ -358,6 +359,8 @@ YOCTO_API_OBJS_STAT = yocto_api.o\
 	yocto_realtimeclock.o \
 	yocto_refframe.o \
 	yocto_relay.o \
+	yocto_rfidreader.o \
+	yocto_sdi12port.o \
 	yocto_segmenteddisplay.o \
 	yocto_serialport.o \
 	yocto_servo.o \
@@ -456,19 +459,15 @@ fwd: default
 
 # WINDOW 32bits
 $(OBJDIR_WIN32)%.obj: %.c $(ALL_H)
-	@echo compiling $@
 	@$(CC_WIN32) $(OPTS_WIN32) $(OPTS_PROD_WIN) $(OPTS_STAT_WIN) $(INC_PATH_WIN) /Fo$@ /c $<
 
 $(OBJDIR_WIN32)%.obj: %.cpp $(ALL_H)
-	@echo compiling $@
 	@$(CPP_WIN32) $(OPTS_WIN32) $(OPTS_PROD_WIN) $(OPTS_STAT_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
 
 $(OBJDIR_WIN32)%_dyn.obj: %.c $(ALL_H)
-	@echo compiling $@
 	@$(CC_WIN32) $(OPTS_WIN32) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /Fo$@ /c $<
 
 $(OBJDIR_WIN32)%_dyn.obj: %.cpp $(ALL_H)
-	@echo compiling $@
 	@$(CPP_WIN32) $(OPTS_WIN32) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
 
 $(OBJDIR_WIN32)%.res: %.rc
@@ -476,19 +475,15 @@ $(OBJDIR_WIN32)%.res: %.rc
 
 # WINDOW 64bits
 $(OBJDIR_WIN64)%.obj: %.c $(ALL_H)
-	@echo compiling $@
 	@$(CC_WIN64) $(OPTS_WIN64) $(OPTS_PROD_WIN) $(OPTS_STAT_WIN) $(INC_PATH_WIN) /Fo$@ /c $<
 
 $(OBJDIR_WIN64)%.obj: %.cpp $(ALL_H)
-	@echo compiling $@
 	@$(CPP_WIN64) $(OPTS_WIN64) $(OPTS_PROD_WIN) $(OPTS_STAT_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
 
 $(OBJDIR_WIN64)%_dyn.obj: %.c $(ALL_H)
-	@echo compiling $@
 	@$(CC_WIN64) $(OPTS_WIN64) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /Fo$@ /c $<
 
 $(OBJDIR_WIN64)%_dyn.obj: %.cpp $(ALL_H)
-	@echo compiling $@
 	@$(CPP_WIN64) $(OPTS_WIN64) $(OPTS_PROD_WIN) $(OPTS_DYN_WIN) $(INC_PATH_WIN) /EHsc /Fo$@ /c $<
 
 $(OBJDIR_WIN64)%.res: %.rc

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_powersupply.cpp 52570 2022-12-26 09:27:54Z seb $
+ *  $Id: yocto_powersupply.cpp 55635 2023-07-26 09:20:02Z seb $
  *
  *  Implements yFindPowerSupply(), the high-level API for PowerSupply functions
  *
@@ -55,18 +55,16 @@ using namespace YOCTOLIB_NAMESPACE;
 
 YPowerSupply::YPowerSupply(const string& func): YFunction(func)
 //--- (YPowerSupply initialization)
-    ,_voltageSetPoint(VOLTAGESETPOINT_INVALID)
+    ,_voltageLimit(VOLTAGELIMIT_INVALID)
     ,_currentLimit(CURRENTLIMIT_INVALID)
     ,_powerOutput(POWEROUTPUT_INVALID)
-    ,_voltageSense(VOLTAGESENSE_INVALID)
     ,_measuredVoltage(MEASUREDVOLTAGE_INVALID)
     ,_measuredCurrent(MEASUREDCURRENT_INVALID)
     ,_inputVoltage(INPUTVOLTAGE_INVALID)
-    ,_vInt(VINT_INVALID)
-    ,_ldoTemperature(LDOTEMPERATURE_INVALID)
     ,_voltageTransition(VOLTAGETRANSITION_INVALID)
-    ,_voltageAtStartUp(VOLTAGEATSTARTUP_INVALID)
-    ,_currentAtStartUp(CURRENTATSTARTUP_INVALID)
+    ,_voltageLimitAtStartUp(VOLTAGELIMITATSTARTUP_INVALID)
+    ,_currentLimitAtStartUp(CURRENTLIMITATSTARTUP_INVALID)
+    ,_powerOutputAtStartUp(POWEROUTPUTATSTARTUP_INVALID)
     ,_command(COMMAND_INVALID)
     ,_valueCallbackPowerSupply(NULL)
 //--- (end of YPowerSupply initialization)
@@ -81,31 +79,26 @@ YPowerSupply::~YPowerSupply()
 }
 //--- (YPowerSupply implementation)
 // static attributes
-const double YPowerSupply::VOLTAGESETPOINT_INVALID = YAPI_INVALID_DOUBLE;
+const double YPowerSupply::VOLTAGELIMIT_INVALID = YAPI_INVALID_DOUBLE;
 const double YPowerSupply::CURRENTLIMIT_INVALID = YAPI_INVALID_DOUBLE;
 const double YPowerSupply::MEASUREDVOLTAGE_INVALID = YAPI_INVALID_DOUBLE;
 const double YPowerSupply::MEASUREDCURRENT_INVALID = YAPI_INVALID_DOUBLE;
 const double YPowerSupply::INPUTVOLTAGE_INVALID = YAPI_INVALID_DOUBLE;
-const double YPowerSupply::VINT_INVALID = YAPI_INVALID_DOUBLE;
-const double YPowerSupply::LDOTEMPERATURE_INVALID = YAPI_INVALID_DOUBLE;
 const string YPowerSupply::VOLTAGETRANSITION_INVALID = YAPI_INVALID_STRING;
-const double YPowerSupply::VOLTAGEATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
-const double YPowerSupply::CURRENTATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
+const double YPowerSupply::VOLTAGELIMITATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
+const double YPowerSupply::CURRENTLIMITATSTARTUP_INVALID = YAPI_INVALID_DOUBLE;
 const string YPowerSupply::COMMAND_INVALID = YAPI_INVALID_STRING;
 
 int YPowerSupply::_parseAttr(YJSONObject *json_val)
 {
-    if(json_val->has("voltageSetPoint")) {
-        _voltageSetPoint =  floor(json_val->getDouble("voltageSetPoint") / 65.536 + 0.5) / 1000.0;
+    if(json_val->has("voltageLimit")) {
+        _voltageLimit =  floor(json_val->getDouble("voltageLimit") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("currentLimit")) {
         _currentLimit =  floor(json_val->getDouble("currentLimit") / 65.536 + 0.5) / 1000.0;
     }
     if(json_val->has("powerOutput")) {
         _powerOutput =  (Y_POWEROUTPUT_enum)json_val->getInt("powerOutput");
-    }
-    if(json_val->has("voltageSense")) {
-        _voltageSense =  (Y_VOLTAGESENSE_enum)json_val->getInt("voltageSense");
     }
     if(json_val->has("measuredVoltage")) {
         _measuredVoltage =  floor(json_val->getDouble("measuredVoltage") / 65.536 + 0.5) / 1000.0;
@@ -116,20 +109,17 @@ int YPowerSupply::_parseAttr(YJSONObject *json_val)
     if(json_val->has("inputVoltage")) {
         _inputVoltage =  floor(json_val->getDouble("inputVoltage") / 65.536 + 0.5) / 1000.0;
     }
-    if(json_val->has("vInt")) {
-        _vInt =  floor(json_val->getDouble("vInt") / 65.536 + 0.5) / 1000.0;
-    }
-    if(json_val->has("ldoTemperature")) {
-        _ldoTemperature =  floor(json_val->getDouble("ldoTemperature") / 65.536 + 0.5) / 1000.0;
-    }
     if(json_val->has("voltageTransition")) {
         _voltageTransition =  json_val->getString("voltageTransition");
     }
-    if(json_val->has("voltageAtStartUp")) {
-        _voltageAtStartUp =  floor(json_val->getDouble("voltageAtStartUp") / 65.536 + 0.5) / 1000.0;
+    if(json_val->has("voltageLimitAtStartUp")) {
+        _voltageLimitAtStartUp =  floor(json_val->getDouble("voltageLimitAtStartUp") / 65.536 + 0.5) / 1000.0;
     }
-    if(json_val->has("currentAtStartUp")) {
-        _currentAtStartUp =  floor(json_val->getDouble("currentAtStartUp") / 65.536 + 0.5) / 1000.0;
+    if(json_val->has("currentLimitAtStartUp")) {
+        _currentLimitAtStartUp =  floor(json_val->getDouble("currentLimitAtStartUp") / 65.536 + 0.5) / 1000.0;
+    }
+    if(json_val->has("powerOutputAtStartUp")) {
+        _powerOutputAtStartUp =  (Y_POWEROUTPUTATSTARTUP_enum)json_val->getInt("powerOutputAtStartUp");
     }
     if(json_val->has("command")) {
         _command =  json_val->getString("command");
@@ -139,22 +129,22 @@ int YPowerSupply::_parseAttr(YJSONObject *json_val)
 
 
 /**
- * Changes the voltage set point, in V.
+ * Changes the voltage limit, in V.
  *
- * @param newval : a floating point number corresponding to the voltage set point, in V
+ * @param newval : a floating point number corresponding to the voltage limit, in V
  *
  * @return YAPI::SUCCESS if the call succeeds.
  *
  * On failure, throws an exception or returns a negative error code.
  */
-int YPowerSupply::set_voltageSetPoint(double newval)
+int YPowerSupply::set_voltageLimit(double newval)
 {
     string rest_val;
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
         char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
-        res = _setAttr("voltageSetPoint", rest_val);
+        res = _setAttr("voltageLimit", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
          throw;
@@ -164,13 +154,13 @@ int YPowerSupply::set_voltageSetPoint(double newval)
 }
 
 /**
- * Returns the voltage set point, in V.
+ * Returns the voltage limit, in V.
  *
- * @return a floating point number corresponding to the voltage set point, in V
+ * @return a floating point number corresponding to the voltage limit, in V
  *
- * On failure, throws an exception or returns YPowerSupply::VOLTAGESETPOINT_INVALID.
+ * On failure, throws an exception or returns YPowerSupply::VOLTAGELIMIT_INVALID.
  */
-double YPowerSupply::get_voltageSetPoint(void)
+double YPowerSupply::get_voltageLimit(void)
 {
     double res = 0.0;
     yEnterCriticalSection(&_this_cs);
@@ -179,11 +169,11 @@ double YPowerSupply::get_voltageSetPoint(void)
             if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
                 {
                     yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::VOLTAGESETPOINT_INVALID;
+                    return YPowerSupply::VOLTAGELIMIT_INVALID;
                 }
             }
         }
-        res = _voltageSetPoint;
+        res = _voltageLimit;
     } catch (std::exception &) {
         yLeaveCriticalSection(&_this_cs);
         throw;
@@ -303,62 +293,6 @@ int YPowerSupply::set_powerOutput(Y_POWEROUTPUT_enum newval)
 }
 
 /**
- * Returns the output voltage control point.
- *
- * @return either YPowerSupply::VOLTAGESENSE_INT or YPowerSupply::VOLTAGESENSE_EXT, according to the
- * output voltage control point
- *
- * On failure, throws an exception or returns YPowerSupply::VOLTAGESENSE_INVALID.
- */
-Y_VOLTAGESENSE_enum YPowerSupply::get_voltageSense(void)
-{
-    Y_VOLTAGESENSE_enum res;
-    yEnterCriticalSection(&_this_cs);
-    try {
-        if (_cacheExpiration <= YAPI::GetTickCount()) {
-            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
-                {
-                    yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::VOLTAGESENSE_INVALID;
-                }
-            }
-        }
-        res = _voltageSense;
-    } catch (std::exception &) {
-        yLeaveCriticalSection(&_this_cs);
-        throw;
-    }
-    yLeaveCriticalSection(&_this_cs);
-    return res;
-}
-
-/**
- * Changes the voltage control point.
- *
- * @param newval : either YPowerSupply::VOLTAGESENSE_INT or YPowerSupply::VOLTAGESENSE_EXT, according to
- * the voltage control point
- *
- * @return YAPI::SUCCESS if the call succeeds.
- *
- * On failure, throws an exception or returns a negative error code.
- */
-int YPowerSupply::set_voltageSense(Y_VOLTAGESENSE_enum newval)
-{
-    string rest_val;
-    int res;
-    yEnterCriticalSection(&_this_cs);
-    try {
-        char buf[32]; SAFE_SPRINTF(buf, 32, "%d", newval); rest_val = string(buf);
-        res = _setAttr("voltageSense", rest_val);
-    } catch (std::exception &) {
-         yLeaveCriticalSection(&_this_cs);
-         throw;
-    }
-    yLeaveCriticalSection(&_this_cs);
-    return res;
-}
-
-/**
  * Returns the measured output voltage, in V.
  *
  * @return a floating point number corresponding to the measured output voltage, in V
@@ -445,64 +379,6 @@ double YPowerSupply::get_inputVoltage(void)
     return res;
 }
 
-/**
- * Returns the internal voltage, in V.
- *
- * @return a floating point number corresponding to the internal voltage, in V
- *
- * On failure, throws an exception or returns YPowerSupply::VINT_INVALID.
- */
-double YPowerSupply::get_vInt(void)
-{
-    double res = 0.0;
-    yEnterCriticalSection(&_this_cs);
-    try {
-        if (_cacheExpiration <= YAPI::GetTickCount()) {
-            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
-                {
-                    yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::VINT_INVALID;
-                }
-            }
-        }
-        res = _vInt;
-    } catch (std::exception &) {
-        yLeaveCriticalSection(&_this_cs);
-        throw;
-    }
-    yLeaveCriticalSection(&_this_cs);
-    return res;
-}
-
-/**
- * Returns the LDO temperature, in Celsius.
- *
- * @return a floating point number corresponding to the LDO temperature, in Celsius
- *
- * On failure, throws an exception or returns YPowerSupply::LDOTEMPERATURE_INVALID.
- */
-double YPowerSupply::get_ldoTemperature(void)
-{
-    double res = 0.0;
-    yEnterCriticalSection(&_this_cs);
-    try {
-        if (_cacheExpiration <= YAPI::GetTickCount()) {
-            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
-                {
-                    yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::LDOTEMPERATURE_INVALID;
-                }
-            }
-        }
-        res = _ldoTemperature;
-    } catch (std::exception &) {
-        yLeaveCriticalSection(&_this_cs);
-        throw;
-    }
-    yLeaveCriticalSection(&_this_cs);
-    return res;
-}
-
 string YPowerSupply::get_voltageTransition(void)
 {
     string res;
@@ -551,14 +427,14 @@ int YPowerSupply::set_voltageTransition(const string& newval)
  *
  * On failure, throws an exception or returns a negative error code.
  */
-int YPowerSupply::set_voltageAtStartUp(double newval)
+int YPowerSupply::set_voltageLimitAtStartUp(double newval)
 {
     string rest_val;
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
         char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
-        res = _setAttr("voltageAtStartUp", rest_val);
+        res = _setAttr("voltageLimitAtStartUp", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
          throw;
@@ -568,13 +444,13 @@ int YPowerSupply::set_voltageAtStartUp(double newval)
 }
 
 /**
- * Returns the selected voltage set point at device startup, in V.
+ * Returns the selected voltage limit at device startup, in V.
  *
- * @return a floating point number corresponding to the selected voltage set point at device startup, in V
+ * @return a floating point number corresponding to the selected voltage limit at device startup, in V
  *
- * On failure, throws an exception or returns YPowerSupply::VOLTAGEATSTARTUP_INVALID.
+ * On failure, throws an exception or returns YPowerSupply::VOLTAGELIMITATSTARTUP_INVALID.
  */
-double YPowerSupply::get_voltageAtStartUp(void)
+double YPowerSupply::get_voltageLimitAtStartUp(void)
 {
     double res = 0.0;
     yEnterCriticalSection(&_this_cs);
@@ -583,11 +459,11 @@ double YPowerSupply::get_voltageAtStartUp(void)
             if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
                 {
                     yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::VOLTAGEATSTARTUP_INVALID;
+                    return YPowerSupply::VOLTAGELIMITATSTARTUP_INVALID;
                 }
             }
         }
-        res = _voltageAtStartUp;
+        res = _voltageLimitAtStartUp;
     } catch (std::exception &) {
         yLeaveCriticalSection(&_this_cs);
         throw;
@@ -606,14 +482,14 @@ double YPowerSupply::get_voltageAtStartUp(void)
  *
  * On failure, throws an exception or returns a negative error code.
  */
-int YPowerSupply::set_currentAtStartUp(double newval)
+int YPowerSupply::set_currentLimitAtStartUp(double newval)
 {
     string rest_val;
     int res;
     yEnterCriticalSection(&_this_cs);
     try {
         char buf[32]; SAFE_SPRINTF(buf, 32, "%" FMTs64, (s64)floor(newval * 65536.0 + 0.5)); rest_val = string(buf);
-        res = _setAttr("currentAtStartUp", rest_val);
+        res = _setAttr("currentLimitAtStartUp", rest_val);
     } catch (std::exception &) {
          yLeaveCriticalSection(&_this_cs);
          throw;
@@ -627,9 +503,9 @@ int YPowerSupply::set_currentAtStartUp(double newval)
  *
  * @return a floating point number corresponding to the selected current limit at device startup, in mA
  *
- * On failure, throws an exception or returns YPowerSupply::CURRENTATSTARTUP_INVALID.
+ * On failure, throws an exception or returns YPowerSupply::CURRENTLIMITATSTARTUP_INVALID.
  */
-double YPowerSupply::get_currentAtStartUp(void)
+double YPowerSupply::get_currentLimitAtStartUp(void)
 {
     double res = 0.0;
     yEnterCriticalSection(&_this_cs);
@@ -638,14 +514,71 @@ double YPowerSupply::get_currentAtStartUp(void)
             if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
                 {
                     yLeaveCriticalSection(&_this_cs);
-                    return YPowerSupply::CURRENTATSTARTUP_INVALID;
+                    return YPowerSupply::CURRENTLIMITATSTARTUP_INVALID;
                 }
             }
         }
-        res = _currentAtStartUp;
+        res = _currentLimitAtStartUp;
     } catch (std::exception &) {
         yLeaveCriticalSection(&_this_cs);
         throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Returns the power supply output switch state.
+ *
+ * @return either YPowerSupply::POWEROUTPUTATSTARTUP_OFF or YPowerSupply::POWEROUTPUTATSTARTUP_ON,
+ * according to the power supply output switch state
+ *
+ * On failure, throws an exception or returns YPowerSupply::POWEROUTPUTATSTARTUP_INVALID.
+ */
+Y_POWEROUTPUTATSTARTUP_enum YPowerSupply::get_powerOutputAtStartUp(void)
+{
+    Y_POWEROUTPUTATSTARTUP_enum res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        if (_cacheExpiration <= YAPI::GetTickCount()) {
+            if (this->_load_unsafe(YAPI::_yapiContext.GetCacheValidity()) != YAPI_SUCCESS) {
+                {
+                    yLeaveCriticalSection(&_this_cs);
+                    return YPowerSupply::POWEROUTPUTATSTARTUP_INVALID;
+                }
+            }
+        }
+        res = _powerOutputAtStartUp;
+    } catch (std::exception &) {
+        yLeaveCriticalSection(&_this_cs);
+        throw;
+    }
+    yLeaveCriticalSection(&_this_cs);
+    return res;
+}
+
+/**
+ * Changes the power supply output switch state at device start up. Remember to call the matching
+ * module saveToFlash() method, otherwise this call has no effect.
+ *
+ * @param newval : either YPowerSupply::POWEROUTPUTATSTARTUP_OFF or
+ * YPowerSupply::POWEROUTPUTATSTARTUP_ON, according to the power supply output switch state at device start up
+ *
+ * @return YAPI::SUCCESS if the call succeeds.
+ *
+ * On failure, throws an exception or returns a negative error code.
+ */
+int YPowerSupply::set_powerOutputAtStartUp(Y_POWEROUTPUTATSTARTUP_enum newval)
+{
+    string rest_val;
+    int res;
+    yEnterCriticalSection(&_this_cs);
+    try {
+        rest_val = (newval>0 ? "1" : "0");
+        res = _setAttr("powerOutputAtStartUp", rest_val);
+    } catch (std::exception &) {
+         yLeaveCriticalSection(&_this_cs);
+         throw;
     }
     yLeaveCriticalSection(&_this_cs);
     return res;

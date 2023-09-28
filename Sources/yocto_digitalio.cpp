@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_digitalio.cpp 52570 2022-12-26 09:27:54Z seb $
+ *  $Id: yocto_digitalio.cpp 56106 2023-08-16 09:14:54Z seb $
  *
  *  Implements yFindDigitalIO(), the high-level API for DigitalIO functions
  *
@@ -611,11 +611,11 @@ int YDigitalIO::_invokeValueCallback(string value)
 int YDigitalIO::set_bitState(int bitno,int bitstate)
 {
     if (!(bitstate >= 0)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid bit state");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid bit state");
         return YAPI_INVALID_ARGUMENT;
     }
     if (!(bitstate <= 1)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid bit state");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid bit state");
         return YAPI_INVALID_ARGUMENT;
     }
     return this->set_command(YapiWrapper::ysprintf("%c%d",82+bitstate,bitno));
@@ -665,11 +665,11 @@ int YDigitalIO::toggle_bitState(int bitno)
 int YDigitalIO::set_bitDirection(int bitno,int bitdirection)
 {
     if (!(bitdirection >= 0)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid direction");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid direction");
         return YAPI_INVALID_ARGUMENT;
     }
     if (!(bitdirection <= 1)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid direction");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid direction");
         return YAPI_INVALID_ARGUMENT;
     }
     return this->set_command(YapiWrapper::ysprintf("%c%d",73+6*bitdirection,bitno));
@@ -707,11 +707,11 @@ int YDigitalIO::get_bitDirection(int bitno)
 int YDigitalIO::set_bitPolarity(int bitno,int bitpolarity)
 {
     if (!(bitpolarity >= 0)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid bit polarity");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid bit polarity");
         return YAPI_INVALID_ARGUMENT;
     }
     if (!(bitpolarity <= 1)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid bit polarity");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid bit polarity");
         return YAPI_INVALID_ARGUMENT;
     }
     return this->set_command(YapiWrapper::ysprintf("%c%d",110+4*bitpolarity,bitno));
@@ -749,11 +749,11 @@ int YDigitalIO::get_bitPolarity(int bitno)
 int YDigitalIO::set_bitOpenDrain(int bitno,int opendrain)
 {
     if (!(opendrain >= 0)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid state");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid state");
         return YAPI_INVALID_ARGUMENT;
     }
     if (!(opendrain <= 1)) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid state");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid state");
         return YAPI_INVALID_ARGUMENT;
     }
     return this->set_command(YapiWrapper::ysprintf("%c%d",100-32*opendrain,bitno));

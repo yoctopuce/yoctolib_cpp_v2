@@ -20,14 +20,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -184,9 +184,6 @@
     <ClCompile Include="..\..\..\Sources\yapi\ykey.c" />
     <ClCompile Include="..\..\..\Sources\yocto_api.cpp" />
     
-<ClCompile Include="..\..\..\Sources\yocto_humidity.cpp" />
-<ClCompile Include="..\..\..\Sources\yocto_temperature.cpp" />
-<ClCompile Include="..\..\..\Sources\yocto_tvoc.cpp" />
 <ClCompile Include="..\..\..\Sources\yocto_voc.cpp" />
 <ClCompile Include="..\..\..\Sources\yocto_datalogger.cpp" />
 
@@ -224,9 +221,6 @@
     <ClInclude Include="..\..\..\Sources\yapi\ykey.h" />
     <ClInclude Include="..\..\..\Sources\yocto_api.h" />
     
-<ClInclude Include="..\..\..\Sources\yocto_humidity.h" />
-<ClInclude Include="..\..\..\Sources\yocto_temperature.h" />
-<ClInclude Include="..\..\..\Sources\yocto_tvoc.h" />
 <ClInclude Include="..\..\..\Sources\yocto_voc.h" />
 <ClInclude Include="..\..\..\Sources\yocto_datalogger.h" />
 

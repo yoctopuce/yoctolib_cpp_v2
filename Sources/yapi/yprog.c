@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yprog.c 52357 2022-12-14 09:59:09Z seb $
+ * $Id: yprog.c 56623 2023-09-20 07:47:56Z seb $
  *
  * Implementation of firmware upgrade functions
  *
@@ -55,7 +55,11 @@
 #include <sys/stat.h>
 #endif
 #endif
+#ifdef YAPI_IN_YDEVICE
+#include "privhash.h"
+#else
 #include "yhash.h"
+#endif
 #include "yjson.h"
 #include "yprog.h"
 #include <stdio.h>
@@ -2291,7 +2295,7 @@ static int checkFirmwareFromWeb(const char* serial, char* out_url, int url_max_l
 
     YSPRINTF(request, 256, "/FR/common/getLastFirmwareLink.php?serial=%s", serial);
 #ifndef NO_YSSL
-    res = yTcpDownload("www.yoctopuce.com", DEFAULT_HTTPS_PORT, 1, request, &buffer, 10000, errmsg);
+    res = yTcpDownload("www.yoctopuce.com", DEFAULT_HTTPS_PORT, 2, request, &buffer, 10000, errmsg);
 #else
     res = yTcpDownload("www.yoctopuce.com", DEFAULT_HTTP_PORT, 0, request, &buffer, 10000, errmsg);
 #endif

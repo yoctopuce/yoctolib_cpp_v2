@@ -318,6 +318,7 @@
 <ClCompile Include="..\..\..\Sources\yocto_anbutton.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_display.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_files.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_quadraturedecoder.cpp"><Filter>YoctoLib</Filter></ClCompile>
 
   </ItemGroup>
   <ItemGroup>
@@ -415,6 +416,7 @@
 <ClInclude Include="..\..\..\Sources\yocto_anbutton.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_display.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_files.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_quadraturedecoder.h"><Filter>YoctoLib</Filter></ClInclude>
 
 
   </ItemGroup>

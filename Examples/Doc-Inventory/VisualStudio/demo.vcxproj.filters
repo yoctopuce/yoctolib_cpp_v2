@@ -342,6 +342,7 @@
 <ClCompile Include="..\..\..\Sources\yocto_hubport.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_humidity.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_i2cport.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_inputcapture.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_inputchain.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_latitude.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_led.cpp"><Filter>YoctoLib</Filter></ClCompile>
@@ -368,6 +369,8 @@
 <ClCompile Include="..\..\..\Sources\yocto_realtimeclock.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_refframe.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_relay.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_rfidreader.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_sdi12port.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_segmenteddisplay.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_serialport.cpp"><Filter>YoctoLib</Filter></ClCompile>
 <ClCompile Include="..\..\..\Sources\yocto_servo.cpp"><Filter>YoctoLib</Filter></ClCompile>
@@ -506,6 +509,7 @@
 <ClInclude Include="..\..\..\Sources\yocto_hubport.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_humidity.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_i2cport.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_inputcapture.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_inputchain.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_latitude.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_led.h"><Filter>YoctoLib</Filter></ClInclude>
@@ -532,6 +536,8 @@
 <ClInclude Include="..\..\..\Sources\yocto_realtimeclock.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_refframe.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_relay.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_rfidreader.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_sdi12port.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_segmenteddisplay.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_serialport.h"><Filter>YoctoLib</Filter></ClInclude>
 <ClInclude Include="..\..\..\Sources\yocto_servo.h"><Filter>YoctoLib</Filter></ClInclude>

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_display.cpp 52570 2022-12-26 09:27:54Z seb $
+ * $Id: yocto_display.cpp 56106 2023-08-16 09:14:54Z seb $
  *
  * Implements yFindDisplay(), the high-level API for Display functions
  *
@@ -1417,7 +1417,7 @@ YDisplayLayer* YDisplay::get_displayLayer(int layerId)
     int idx = 0;
     layercount = this->get_layerCount();
     if (!((layerId >= 0) && (layerId < layercount))) {
-        _throw(YAPI_INVALID_ARGUMENT,"invalid DisplayLayer index");
+        _throw((YRETCODE)(YAPI_INVALID_ARGUMENT), "invalid DisplayLayer index");
         return NULL;
     }
     if ((int)_allDisplayLayers.size() == 0) {

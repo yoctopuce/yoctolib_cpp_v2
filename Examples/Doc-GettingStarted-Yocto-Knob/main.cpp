@@ -1,13 +1,13 @@
 /*********************************************************************
  *
- *  $Id: main.cpp 45539 2021-06-14 07:23:58Z web $
+ *  $Id: main.cpp 54332 2023-05-02 08:35:37Z seb $
  *
  *  An example that show how to use a  Yocto-Knob
  *
  *  You can find more information on our web site:
  *   Yocto-Knob documentation:
  *      https://www.yoctopuce.com/EN/products/yocto-knob/doc.html
- *   C++ API Reference:
+ *   C++ V2 API Reference:
  *      https://www.yoctopuce.com/EN/doc/reference/yoctolib-cpp-EN.html
  *
  *********************************************************************/

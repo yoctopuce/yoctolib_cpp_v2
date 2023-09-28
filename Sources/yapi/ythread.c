@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ythread.c 52551 2022-12-23 09:03:24Z seb $
+ * $Id: ythread.c 56739 2023-09-26 13:01:31Z mvuilleu $
  *
  * OS-independent thread and synchronization library
  *
@@ -800,14 +800,17 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 
 #elif defined(FREERTOS_API)
 
+#include <string.h>
+
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs)
 {
-    cs->handle = xSemaphoreCreateMutexStatic(&(cs->buffer));
+    YASSERT(sizeof(cs->semaphore) == sizeof(StaticSemaphore_t), sizeof(cs->semaphore));
+    cs->handle = xSemaphoreCreateMutexStatic((StaticSemaphore_t *)&(cs->semaphore));
 }
 
 void yEnterCriticalSection(yCRITICAL_SECTION *cs)
 {
-    xSemaphoreTake(cs->handle, portMAX_DELAY );
+    xSemaphoreTake(cs->handle, portMAX_DELAY);
 }
 
 int yTryEnterCriticalSection(yCRITICAL_SECTION *cs)
@@ -821,13 +824,13 @@ int yTryEnterCriticalSection(yCRITICAL_SECTION *cs)
 
 void yLeaveCriticalSection(yCRITICAL_SECTION *cs)
 {
-
     xSemaphoreGive(cs->handle);
 }
 
 void yDeleteCriticalSection(yCRITICAL_SECTION *cs)
 {
     vSemaphoreDelete(cs->handle);
+    memset(cs, 0, sizeof(yCRITICAL_SECTION));
 }
 
 #elif !defined(MICROCHIP_API)

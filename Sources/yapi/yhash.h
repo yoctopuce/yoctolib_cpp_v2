@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yhash.h 51581 2022-11-14 11:00:14Z seb $
+ * $Id: yhash.h 56623 2023-09-20 07:47:56Z seb $
  *
  * Simple hash tables and device/function information store
  *
@@ -46,18 +46,17 @@ extern "C" {
 
 #include "ydef.h"
 
+#ifdef YAPI_IN_YDEVICE
+#error Old yHash implementation should not be used in devices
+#endif
+
 //#define DEBUG_WP_LOCK
 //#define DEBUG_WP
 
 #define HASH_BUF_SIZE 28
 #define HASH_BUF_POW   5 /* HASH_BUF_POW = log_2(HASH_BUF_SIZE+2+2) */
-#ifdef EMBEDDED_API
-#define NB_MAX_HASH_ENTRIES 1023     /* keep hash table size <32KB on Yocto-Hub */
-#define NB_MAX_DEVICES        80     /* base hub + up to 15 shields (up to 4 slave ports) */
-#else
 #define NB_MAX_HASH_ENTRIES 8192
 #define NB_MAX_DEVICES       256
-#endif
 
 #define YSTRREF_EMPTY_STRING   0x00ff /* yStrRef value for the empty string    */
 #define YSTRREF_MODULE_STRING  0x0020 /* yStrRef value for the string 'Module' */
@@ -185,9 +184,7 @@ void  yHashGetBuf(yHash yhash, u8 *destbuf, u16 bufsize);
 void  yHashGetStr(yHash yhash, char *destbuf, u16 bufsize);
 u16   yHashGetStrLen(yHash yhash);
 char  *yHashGetStrPtr(yHash yhash);
-#ifndef EMBEDDED_API
 void yHashFree(void);
-#endif
 u16 yBlkListLength(yBlkHdl hdl);
 yBlkHdl yBlkListSeek(yBlkHdl hdl, u16 pos);
 int wpRegister(int devYdx, yStrRef serial, yStrRef logicalName, yStrRef productName, u16 productId, yUrlRef devUrl, s8 beacon);
@@ -208,27 +205,22 @@ void wpAllowUnregisterEx(void);
 int wpMarkForUnregister(yStrRef serial);
 int wpGetDevYdx(yStrRef serial);
 YAPI_DEVICE wpSearchByNameHash(yStrRef strref);
-#ifndef EMBEDDED_API
+int     ypSearchByDevYdx(u8 devYdx, yStrRef strref);
+int     ypFunctionCount(u8 devYdx);
 u16 wpEntryCount(void);
 YAPI_DEVICE wpSearchEx(yStrRef strref);
-YAPI_DEVICE wpSearch(const char* device_str);
-YAPI_DEVICE wpSearchByUrl(const char* host, const char* rootUrl);
-int wpGetAllDevUsingHubUrl(yUrlRef hubUrl, yStrRef* buffer, int sizeInStrRef);
-
-yUrlRef wpGetDeviceUrlRef(YAPI_DEVICE devdesc);
-int wpGetDeviceUrl(YAPI_DEVICE devdesc, char* roothubserial, char* request, int requestsize, int* neededsize);
-YAPI_FUNCTION ypSearch(const char* class_str, const char* func_str);
-int ypGetFunctions(const char* class_str, YAPI_DEVICE devdesc, YAPI_FUNCTION prevfundesc,
-                   YAPI_FUNCTION* buffer, int maxsize, int* neededsize);
+YAPI_DEVICE wpSearch(const char *device_str);
+YAPI_FUNCTION ypSearch(const char *class_str, const char *func_str);
+int     ypGetFunctions(const char *class_str, YAPI_DEVICE devdesc, YAPI_FUNCTION prevfundesc,
+                       YAPI_FUNCTION *buffer,int maxsize,int *neededsize);
 int ypGetFunctionInfo(YAPI_FUNCTION fundesc, char* serial, char* funcId, char* baseType, char* funcName, char* funcVal);
-#endif
 int ypGetFunctionsEx(yStrRef categref, YAPI_DEVICE devdesc, YAPI_FUNCTION prevfundesc, YAPI_FUNCTION* buffer, int maxsize, int* neededsize);
 int wpGetDeviceInfo(YAPI_DEVICE devdesc, u16* deviceid, char* productname, char* serial, char* logicalname, u8* beacon);
 int ypRegister(yStrRef categ, yStrRef serial, yStrRef funcId, yStrRef funcName, int funClass, int funYdx, const char* funcVal);
 // WARNING: funcVal MUST BE WORD-ALIGNED
 int ypRegisterByYdx(u8 devYdx, Notification_funydx funInfo, const char* funcVal, YAPI_FUNCTION* fundesc);
 // WARNING: funcVal MUST BE WORD-ALIGNED
-int ypGetAttributesByYdx(u8 devYdx, u8 funYdx, yStrRef* serial, yStrRef* logicalName, yStrRef* funcId, yStrRef* funcName, Notification_funydx* funcInfo, char* funcVal);
+int ypGetAttributesByYdx(u8 devYdx, u8 funYdx, yStrRef* serial, yStrRef* logicalName, yStrRef* funcId, yStrRef* funcName, u8 *baseclass, Notification_funydx* funcInfo, char* funcVal);
 void ypGetCategory(yBlkHdl hdl, char* name, yBlkHdl* entries);
 int ypGetAttributes(yBlkHdl hdl, yStrRef* serial, yStrRef* funcId, yStrRef* funcName, Notification_funydx* funcInfo, char* funcVal);
 int ypGetType(yBlkHdl hdl);

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ystream.c 53522 2023-03-13 13:30:57Z seb $
+ * $Id: ystream.c 56698 2023-09-26 06:56:35Z seb $
  *
  * USB stream implementation
  *
@@ -42,8 +42,11 @@
 #define __FILENAME__   "ystream"
 
 #include "yproto.h"
+#ifdef YAPI_IN_YDEVICE
+#include "privhash.h"
+#else
 #include "yhash.h"
-
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -1763,7 +1766,7 @@ static void yDispatchNotice(yPrivDeviceSt* dev, USB_Notify_Pkt* notify, int pkts
         // create a new null-terminated small notification that we can use and forward
         char buff[sizeof(Notification_small) + YOCTO_PUBVAL_SIZE + 2];
         Notification_small* smallnot = (Notification_small*)buff;
-        memset(smallnot->pubval, 0,YOCTO_PUBVAL_SIZE + 2);
+        memset(buff, 0, sizeof(buff));
 
         if (notify->smallpubvalnot.funInfo.v2.isSmall == 0) {
             // convert tiny notification to samll notification
@@ -2573,7 +2576,11 @@ int yUsbInit(yContextSt* ctx, char* errmsg)
 #ifdef PERF_YHUB_FUNCTIONS
     memset(&yUsbPerf,0,sizeof(yUsbPerfMonSt));
 #endif
-    return yyyUSB_init(ctx, errmsg);
+    ctx->usb_global_err = yyyUSB_init(ctx, errmsg);
+    if (ctx->usb_global_err < 0) {
+        YSTRCPY(ctx->usb_global_err_msg, YOCTO_ERRMSG_LEN, errmsg);
+    }
+    return ctx->usb_global_err;
 }
 
 

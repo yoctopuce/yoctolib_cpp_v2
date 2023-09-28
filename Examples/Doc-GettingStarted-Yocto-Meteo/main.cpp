@@ -1,13 +1,13 @@
 /*********************************************************************
  *
- *  $Id: main.cpp 46714 2021-10-06 08:29:22Z seb $
+ *  $Id: main.cpp 54332 2023-05-02 08:35:37Z seb $
  *
  *  An example that show how to use a  Yocto-Meteo
  *
  *  You can find more information on our web site:
  *   Yocto-Meteo documentation:
  *      https://www.yoctopuce.com/EN/products/yocto-meteo/doc.html
- *   C++ API Reference:
+ *   C++ V2 API Reference:
  *      https://www.yoctopuce.com/EN/doc/reference/yoctolib-cpp-EN.html
  *
  *********************************************************************/

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.h 51664 2022-11-21 07:55:50Z seb $
+ * $Id: yapi.h 54554 2023-05-15 05:58:53Z seb $
  *
  * Declaration of public entry points to the low-level API
  *
@@ -1124,6 +1124,33 @@ YRETCODE YAPI_FUNCTION_EXPORT yapiAddUdevRulesForYocto(int force, char* errmsg);
 YRETCODE YAPI_FUNCTION_EXPORT yapiGetSubdevices(const char* serial, char* buffer, int buffersize, int* fullsize, char* errmsg);
 
 YRETCODE YAPI_FUNCTION_EXPORT yapiGetDLLPath(char* path, int pathsize, char* errmsg);
+
+int YAPI_FUNCTION_EXPORT yapiGetNextHubRef(int ref);
+
+/*
+ * yapiGetHubStrAttr_internal return the string attribute for a hub.
+ *  ref is always >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
+ *  reserved for USB.
+ *  NOTE: outval buffer is at least 1024 bytes long
+ *  returns a negative number on error or the length of the length of the string copied in buffer.
+ */
+
+int YAPI_FUNCTION_EXPORT yapiGetHubStrAttr(int ref, const char* attrname, char *outval, int buffersize, int* fullsize);
+/*
+ * yapiGetHubStrAttr_internal return the string attribute for a hub.
+ *  ref is allways >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
+ *  reserved for USB.
+ *  returns a negative number on error or the value.
+ */
+
+int YAPI_FUNCTION_EXPORT yapiGetHubIntAttr(int ref, const char* attrname);
+/*
+ * yapiGetHubStrAttr_internal return the string attribute for a hub.
+ *  ref is allways >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
+ *  reserved for USB.
+ *  returns a negative number on error or 0.
+ */
+int YAPI_FUNCTION_EXPORT yapiSetHubIntAttr(int ref, const char* attrname, int value);
 
 /*****************************************************************************
   Flash API

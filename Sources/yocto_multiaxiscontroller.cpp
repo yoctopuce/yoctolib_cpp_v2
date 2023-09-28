@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_multiaxiscontroller.cpp 52570 2022-12-26 09:27:54Z seb $
+ *  $Id: yocto_multiaxiscontroller.cpp 56106 2023-08-16 09:14:54Z seb $
  *
  *  Implements yFindMultiAxisController(), the high-level API for MultiAxisController functions
  *
@@ -312,12 +312,12 @@ int YMultiAxisController::sendCommand(string command)
     res = ((u8)retBin[0]);
     if (res < 58) {
         if (!(res == 48)) {
-            _throw(YAPI_DEVICE_BUSY,"Motor command pipeline is full, try again later");
+            _throw((YRETCODE)(YAPI_DEVICE_BUSY), "Motor command pipeline is full, try again later");
             return YAPI_DEVICE_BUSY;
         }
     } else {
         if (!(res == 48)) {
-            _throw(YAPI_IO_ERROR,"Motor command failed permanently");
+            _throw((YRETCODE)(YAPI_IO_ERROR), "Motor command failed permanently");
             return YAPI_IO_ERROR;
         }
     }

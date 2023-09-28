@@ -59,7 +59,7 @@ OPTS_x86_64 = -m64
 # reduced ARMHF options to run properly on raspian-thing, but still be compatible with hard-floats VFP
 OPTS_I386 = -m32
 OPTS_GENERIC = -O2 -g -I$(YOCTO_API_SRC)
-OPTS_LINK = -lyocto-static -lm -lpthread -lusb-1.0 -lcrypto -lssl
+OPTS_LINK = -lyocto-static -lm -lpthread -lusb-1.0
 
 # Linux
 ifeq ($(ARCH), x86_64)

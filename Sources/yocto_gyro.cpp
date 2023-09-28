@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_gyro.cpp 52570 2022-12-26 09:27:54Z seb $
+ * $Id: yocto_gyro.cpp 54332 2023-05-02 08:35:37Z seb $
  *
  * Implements yFindGyro(), the high-level API for Gyro functions
  *
@@ -841,7 +841,7 @@ int YGyro::registerAnglesCallback(YAnglesCallback callback)
 
 int YGyro::_invokeGyroCallbacks(int qtIndex,double qtValue)
 {
-    switch(qtIndex - 1) {
+    switch (qtIndex - 1) {
     case 0:
         _w = qtValue;
         break;

@@ -316,6 +316,7 @@
     </ClCompile>
     
 <ClCompile Include="..\..\..\Sources\yocto_anbutton.cpp"><Filter>YoctoLib</Filter></ClCompile>
+<ClCompile Include="..\..\..\Sources\yocto_quadraturedecoder.cpp"><Filter>YoctoLib</Filter></ClCompile>
 
   </ItemGroup>
   <ItemGroup>
@@ -411,6 +412,7 @@
     </ClInclude>
     
 <ClInclude Include="..\..\..\Sources\yocto_anbutton.h"><Filter>YoctoLib</Filter></ClInclude>
+<ClInclude Include="..\..\..\Sources\yocto_quadraturedecoder.h"><Filter>YoctoLib</Filter></ClInclude>
 
 
   </ItemGroup>

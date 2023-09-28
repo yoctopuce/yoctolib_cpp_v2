@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef.h 52551 2022-12-23 09:03:24Z seb $
+ * $Id: ydef.h 56739 2023-09-26 13:01:31Z mvuilleu $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -427,9 +427,10 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 // Critical sections on FreeRTOS
 #include <FreeRTOS.h>
 #include <semphr.h>
+#include "FreeRTOS_readable.h"
 typedef struct {
-    SemaphoreHandle_t handle;
-    StaticSemaphore_t buffer;
+    Semaphore_readable_t    semaphore;
+    QueueHandle_t           handle;
 } yCRITICAL_SECTION;
 #define DECLARE_CRITICALSECTION(decl) decl;
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
@@ -471,7 +472,11 @@ typedef enum {
     YAPI_RTC_NOT_READY    = -13,    // real-time clock has not been initialized (or time was lost)
     YAPI_FILE_NOT_FOUND   = -14,    // the file is not found
     YAPI_SSL_ERROR        = -15,    // Error reported by mbedSSL
-    YAPI_BUFFER_TOO_SMALL = -16     // The buffer provided is too small
+    YAPI_RFID_SOFT_ERROR  = -16,    // Recoverable error with RFID tag (eg. tag out of reach), check YRfidStatus for details
+    YAPI_RFID_HARD_ERROR  = -17,    // Serious RFID error (eg. write-protected, out-of-boundary), check YRfidStatus for details
+    YAPI_BUFFER_TOO_SMALL = -18,    // The buffer provided is too small
+    YAPI_DNS_ERROR        = -19,    // Error during name resolutions (invalid hostname or dns communication error)
+    YAPI_SSL_UNK_CERT     = -20     // The certificate is not correctly signed by the trusted CA
 } YRETCODE;
 
 #define YISERR(retcode)   ((retcode) < 0)

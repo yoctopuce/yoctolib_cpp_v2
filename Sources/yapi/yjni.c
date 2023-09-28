@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yjni.c 49591 2022-04-28 12:47:10Z mvuilleu $
+ * $Id: yjni.c 56623 2023-09-20 07:47:56Z seb $
  *
  * Implementation of public entry points to the low-level API
  *
@@ -43,11 +43,11 @@
 
 #include "yapi.h"
 #include "yproto.h"
+
+#ifdef YAPI_WITH_JNI
 #include "yhash.h"
 #include "yjson.h"
 #include "yprog.h"
-
-#ifdef YAPI_WITH_JNI
 
 #include <jni.h>
 #include <stdio.h>

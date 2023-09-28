@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 
 
 project(YoctoLib VERSION 1.0.1 DESCRIPTION "Yoctopuce C++ V2 library")
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 SET(CMAKE_INSTALL_PREFIX "/usr")
 endif()
 include(GNUInstallDirs)
@@ -40,6 +40,7 @@ set(YoctoLibHSources
 	yocto_hubport.h
 	yocto_humidity.h
 	yocto_i2cport.h
+	yocto_inputcapture.h
 	yocto_inputchain.h
 	yocto_latitude.h
 	yocto_led.h
@@ -66,6 +67,8 @@ set(YoctoLibHSources
 	yocto_realtimeclock.h
 	yocto_refframe.h
 	yocto_relay.h
+	yocto_rfidreader.h
+	yocto_sdi12port.h
 	yocto_segmenteddisplay.h
 	yocto_serialport.h
 	yocto_servo.h
@@ -117,6 +120,7 @@ set(YoctoLibCppSources
 	yocto_hubport.cpp
 	yocto_humidity.cpp
 	yocto_i2cport.cpp
+	yocto_inputcapture.cpp
 	yocto_inputchain.cpp
 	yocto_latitude.cpp
 	yocto_led.cpp
@@ -143,6 +147,8 @@ set(YoctoLibCppSources
 	yocto_realtimeclock.cpp
 	yocto_refframe.cpp
 	yocto_relay.cpp
+	yocto_rfidreader.cpp
+	yocto_sdi12port.cpp
 	yocto_segmenteddisplay.cpp
 	yocto_serialport.cpp
 	yocto_servo.cpp

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ykey.c 51526 2022-11-07 14:44:43Z seb $
+ * $Id: ykey.c 56631 2023-09-20 16:36:51Z mvuilleu $
  *
  * Implementation of standard key computations
  *
@@ -332,7 +332,7 @@ typedef struct {
     u8 res[32];
 } WPA_CALC_STATE;
 
-static WPA_CALC_STATE wpak = {-1,0,{0},{0},{0},{0},{0}};
+static WPA_CALC_STATE wpak;
 
 const u32 sha1_init[5] = {0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0};
 
@@ -478,7 +478,6 @@ int yIterPsk(u8* res, const char* ssid)
 {
     int k;
 
-    if (wpak.iter < 0) return -1;
     if (wpak.iter >= 8192) return 0;
     itershaw(wpak.inner);
     wpak.shaw[5] = 0x80000000;
@@ -682,7 +681,7 @@ void MD5AddData(HASH_SUM* ctx, const u8* buf, u32 len)
     memcpy(ctx->in, buf, len);
 }
 
-void MD5Calculate(HASH_SUM* ctx, u8 digest[16])
+void MD5Calculate(HASH_SUM* ctx, u8 *digest)
 {
     unsigned count;
     unsigned char* p;

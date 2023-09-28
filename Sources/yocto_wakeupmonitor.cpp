@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- *  $Id: yocto_wakeupmonitor.cpp 52570 2022-12-26 09:27:54Z seb $
+ *  $Id: yocto_wakeupmonitor.cpp 56106 2023-08-16 09:14:54Z seb $
  *
  *  Implements yFindWakeUpMonitor(), the high-level API for WakeUpMonitor functions
  *
@@ -477,7 +477,7 @@ int YWakeUpMonitor::sleep(int secBeforeSleep)
     int currTime = 0;
     currTime = (int)(this->get_rtcTime());
     if (!(currTime != 0)) {
-        _throw(YAPI_RTC_NOT_READY,"RTC time not set");
+        _throw((YRETCODE)(YAPI_RTC_NOT_READY), "RTC time not set");
         return YAPI_RTC_NOT_READY;
     }
     this->set_nextWakeUp(_endOfTime);
@@ -502,7 +502,7 @@ int YWakeUpMonitor::sleepFor(int secUntilWakeUp,int secBeforeSleep)
     int currTime = 0;
     currTime = (int)(this->get_rtcTime());
     if (!(currTime != 0)) {
-        _throw(YAPI_RTC_NOT_READY,"RTC time not set");
+        _throw((YRETCODE)(YAPI_RTC_NOT_READY), "RTC time not set");
         return YAPI_RTC_NOT_READY;
     }
     this->set_nextWakeUp(currTime+secUntilWakeUp);
@@ -527,7 +527,7 @@ int YWakeUpMonitor::sleepUntil(int wakeUpTime,int secBeforeSleep)
     int currTime = 0;
     currTime = (int)(this->get_rtcTime());
     if (!(currTime != 0)) {
-        _throw(YAPI_RTC_NOT_READY,"RTC time not set");
+        _throw((YRETCODE)(YAPI_RTC_NOT_READY), "RTC time not set");
         return YAPI_RTC_NOT_READY;
     }
     this->set_nextWakeUp(wakeUpTime);

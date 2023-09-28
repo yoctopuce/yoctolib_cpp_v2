@@ -10,7 +10,7 @@ else()
 add_compile_definitions(NO_YSSL)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 SET(CMAKE_INSTALL_PREFIX "/usr")
 endif()
 include(GNUInstallDirs)

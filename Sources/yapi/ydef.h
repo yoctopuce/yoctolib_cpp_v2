@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef.h 56739 2023-09-26 13:01:31Z mvuilleu $
+ * $Id: ydef.h 57040 2023-10-10 08:55:54Z mvuilleu $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -425,24 +425,13 @@ void yDbgDeleteCriticalSection(const char* fileid, int lineno, yCRITICAL_SECTION
 #elif defined(FREERTOS_API)
 
 // Critical sections on FreeRTOS
-#include <FreeRTOS.h>
-#include <semphr.h>
-#include "FreeRTOS_readable.h"
-typedef struct {
-    Semaphore_readable_t    semaphore;
-    QueueHandle_t           handle;
-} yCRITICAL_SECTION;
-#define DECLARE_CRITICALSECTION(decl) decl;
-void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
-void yEnterCriticalSection(yCRITICAL_SECTION *cs);
-int yTryEnterCriticalSection(yCRITICAL_SECTION *cs);
-void yLeaveCriticalSection(yCRITICAL_SECTION *cs);
-void yDeleteCriticalSection(yCRITICAL_SECTION *cs);
+#include "yfreertos.h"
 
 #else
 
 // Critical sections on a real OS
 typedef void* yCRITICAL_SECTION;
+
 #define DECLARE_CRITICALSECTION(decl) decl;
 void yInitializeCriticalSection(yCRITICAL_SECTION *cs);
 void yEnterCriticalSection(yCRITICAL_SECTION *cs);

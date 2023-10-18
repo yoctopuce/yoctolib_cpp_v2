@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ydef_private.h 55241 2023-06-21 10:00:29Z seb $
+ * $Id: ydef_private.h 57138 2023-10-16 13:58:34Z mvuilleu $
  *
  * Standard definitions common to all yoctopuce projects
  *
@@ -79,6 +79,16 @@ extern "C" {
     #define YSTATIC static
 #endif
 
+#if defined(TEXAS_API)
+#define BSS_SECTION(sectname)       __attribute__((section(".bss." #sectname)))
+#define DATA_SECTION(sectname)      __attribute__((section(".data." #sectname)))
+#define RODATA_SECTION(sectname)    __attribute__((section(".rodata." #sectname)))
+#else
+#define BSS_SECTION(sectname)
+#define DATA_SECTION(sectname)
+#define RODATA_SECTION(sectname)
+#endif
+
 #if defined(MICROCHIP_API)
     void ypanic(int line);
     #define YPANIC              panic(__LINE__)
@@ -95,10 +105,11 @@ extern "C" {
         #define YPANIC              do { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__) ,0); } while(0)
         #define YPANIC_IRR(irr)     do { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__) ,irr); } while(0)
         #define YASSERT(x,irr)      if(!(x)) { ypanic(MK_ORIGIN(__FILE_ID__, __LINE__), irr); }
+        #define assert(cond)        YASSERT(cond,0)
     #else
-        #define YPANIC                  {dbglog("YPANIC:%s:%d\n",__FILENAME__ , __LINE__);}
-        #define YPANIC_IRR(irr)         YPANIC
-        #define YASSERT(x, irr)         if(!(x)){dbglog("ASSERT FAILED:%s:%d (%" FMTx64 ")\n",__FILENAME__ , __LINE__, (u64) (irr));}
+        #define YPANIC              {dbglog("YPANIC:%s:%d\n",__FILENAME__ , __LINE__);}
+        #define YPANIC_IRR(irr)     YPANIC
+        #define YASSERT(x, irr)     if(!(x)){dbglog("ASSERT FAILED:%s:%d (%" FMTx64 ")\n",__FILENAME__ , __LINE__, (u64) (irr));}
     #endif
 #endif
 

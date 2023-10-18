@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yproto.h 56623 2023-09-20 07:47:56Z seb $
+ * $Id: yproto.h 57035 2023-10-10 07:02:57Z seb $
  *
  * Definitions and prototype common to all supported OS
  *
@@ -190,8 +190,8 @@ typedef struct {
 #ifndef YMEMORY_ALLOW_MALLOC
 #undef malloc
 #undef free
-#define malloc(size)                    yForbiden_malloc(size)
-#define free(ptr)                       yForbiden_free(ptr)
+#define malloc(size)                    yForbiden_SafeMalloc(size)
+#define free(ptr)                       yForbiden_SafeFree(ptr)
 #endif
 #else
 #define yMalloc(size)                   malloc(size)

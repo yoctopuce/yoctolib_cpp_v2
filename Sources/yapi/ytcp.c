@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: ytcp.c 56623 2023-09-20 07:47:56Z seb $
+ * $Id: ytcp.c 57132 2023-10-16 06:59:00Z seb $
  *
  * Implementation of a client TCP stack
  *
@@ -4345,7 +4345,7 @@ int ySSDPStart(SSDPInfos *SSDP, ssdpHubDiscoveryCallback callback, char *errmsg)
 
     memset(SSDP, 0, sizeof(SSDPInfos));
     SSDP->callback = callback;
-    yDetectNetworkInterfaces(0, detectedIfaces, NB_OS_IFACES);
+    nbDetectedIfaces = yDetectNetworkInterfaces(0, detectedIfaces, NB_OS_IFACES);
 
     for (i = 0; i < nbDetectedIfaces; i++) {
         //create M-search socket

@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.c 56623 2023-09-20 07:47:56Z seb $
+ * $Id: yapi.c 57186 2023-10-18 07:58:20Z seb $
  *
  * Implementation of public entry points to the low-level API
  *
@@ -3769,6 +3769,11 @@ static void* yhelper_thread(void *ctx)
                     dbglog("TRACE(%s): unable to open notification socket(%s)\n",hub->host,errmsg);
                     dbglog("TRACE(%s): retry in %dms (%d retries)\n",hub->host,hub->attemptDelay,hub->retryCount);
 #endif
+                    if (res == YAPI_SSL_UNK_CERT || res == YAPI_SSL_ERROR) {
+                        // invalid certificate -> no need to retry
+                        setNotificationConnectionOFF(hub);
+                        hub->state = NET_HUB_TOCLOSE;
+                    }
                 } else {
 #ifdef TRACE_NET_HUB
                     dbglog("TRACE(%s): notification socket open\n",hub->host);
@@ -4028,6 +4033,7 @@ static YRETCODE yapiRegisterHubEx(const char *url, int checkacces, char *errmsg)
 #ifdef TRACE_NET_HUB
             dbglog("Hub already registred as %s (new =%s)\n", hubst->url.org_url, url);
 #endif
+            yLeaveCriticalSection(&yContext->enum_cs);
             return YAPI_SUCCESS;
         }
         yLeaveCriticalSection(&yContext->enum_cs);

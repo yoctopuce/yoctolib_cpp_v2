@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.c 57186 2023-10-18 07:58:20Z seb $
+ * $Id: yapi.c 57599 2023-11-02 11:06:23Z seb $
  *
  * Implementation of public entry points to the low-level API
  *
@@ -345,10 +345,10 @@ static void yFreeParsedURL(HubURLSt *hub)
     }
 }
 
-static int yParseHubURL(HubURLSt *hub, const char *url, char *errmsg)
+static int yParseHubURL(HubURLSt* hub, const char* url, char* errmsg)
 {
     int len, domlen;
-    const char *end, *p;
+    const char *end, *p, *endv6;
     const char *pos, *posplus;
     char buffer[8];
 
@@ -420,7 +420,13 @@ static int yParseHubURL(HubURLSt *hub, const char *url, char *errmsg)
         }
         end = p;
     }
+    endv6 = strchr(url, ']');
     pos = strchr(url, ':');
+    if (endv6 && pos && endv6 < end && endv6>url) {
+        // ipv6 URL
+        hub->host = ystrndup_s(url, (int)(endv6 + 1 - url));
+        pos = strchr(endv6, ':');
+    }
     posplus = pos + 1;
     if (pos && pos < end) {
         len = (int)(end - posplus);
@@ -447,9 +453,11 @@ static int yParseHubURL(HubURLSt *hub, const char *url, char *errmsg)
         }
     }
     //dbglog("port=%d\n", hub->portno);
-    domlen = (int)(end - url);
-    hub->host = ystrndup_s(url, domlen);
-    //dbglog("domain(host)=%s\n", hub->host);
+    if (hub->host == NULL) {
+        domlen = (int)(end - url);
+        hub->host = ystrndup_s(url, domlen);
+        //dbglog("domain(host)=%s\n", hub->host);
+    }
     return YAPI_SUCCESS;
 }
 
@@ -4234,11 +4242,15 @@ static int yapiGetHubStrAttr_internal(int ref, const char *attrname, char *outva
             return 0;
         }
         if (YSTRCMP(attrname, "serialNumber") == 0) {
-            yHashGetStr(hub->serial, outval, 1024);
-            return YSTRLEN(outval);
+            if (hub->info.serial[0]) {
+                YSTRCPY(outval, buffersize, hub->info.serial);
+                return YSTRLEN(hub->info.serial);
+            }
+            *outval = 0;
+            return 0;
         }
         if (YSTRCMP(attrname, "errorMessage") == 0) {
-            YSTRCPY(outval, 1024, hub->errmsg);
+            YSTRCPY(outval, buffersize, hub->errmsg);
             return YSTRLEN(hub->errmsg);
         }
     }

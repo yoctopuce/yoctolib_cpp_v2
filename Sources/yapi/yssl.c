@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yssl.c 56385 2023-09-04 08:40:33Z seb $
+ * $Id: yssl.c 57302 2023-10-19 09:46:06Z seb $
  *
  * Implementation of a client TCP stack with SSL
  *
@@ -494,12 +494,32 @@ static int do_ssl_handshake(YSSL_SOCKET yssl, int skip_cert_validation, char* er
         }
         if (flags) {
             int len;
-            mbedtls_x509_crt_verify_info(errmsg, YOCTO_ERRMSG_LEN,
-                "SSL:", flags);
-            len = ystrlen(errmsg);
-            while(len > 0 && errmsg[len-1]=='\n') {
-                errmsg[len - 1] = 0;
+            char long_errmsg[2048];
+            mbedtls_x509_crt_verify_info(long_errmsg, 2048,
+                                         "SSL:", flags);
+            len = ystrlen(long_errmsg);
+            // remove trailing \n
+            while (len > 0 && long_errmsg[len - 1] == '\n') {
+                long_errmsg[len - 1] = 0;
                 len--;
+            }
+            if (len + 1 < YOCTO_ERRMSG_LEN) {
+                ystrcpy(errmsg, YOCTO_ERRMSG_LEN, long_errmsg);
+            } else {
+                int nberr = 0;
+                int i, tail_size, used;
+                const char *tail = "...]";
+
+                for (i = 0; i < 32; i++) {
+                    if (flags & (1 << i)) {
+                        nberr++;
+                    }
+                }
+                YSPRINTF(errmsg, YOCTO_ERRMSG_LEN, "SSL handshake failed with %d error%s (res=%x)\n[", nberr, nberr > 1 ? "s" : "", flags);
+                tail_size = ystrlen(tail) + 1;
+                used = ystrlen(errmsg);
+                ystrncpy(errmsg + used, YOCTO_ERRMSG_LEN - used, long_errmsg, YOCTO_ERRMSG_LEN - used-1);
+                memcpy(errmsg + YOCTO_ERRMSG_LEN - tail_size, tail, tail_size);
             }
             if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
                 return YAPI_SSL_UNK_CERT;

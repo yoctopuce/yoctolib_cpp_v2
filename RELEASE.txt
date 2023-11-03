@@ -1,3 +1,5 @@
-CPP2 v2.0.57208
+CPP2 v2.0.57603
 
-- Fix reporting of TLS certificate errors when connecting to a hub via https:// URL
+- Improve message or error that occur during SSL handshake
+- Fix retrieval of YHub serialnumber before first enumeration
+- Fix parsing of IPv6 address

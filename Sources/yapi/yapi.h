@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yapi.h 54554 2023-05-15 05:58:53Z seb $
+ * $Id: yapi.h 57685 2023-11-07 09:55:37Z mvuilleu $
  *
  * Declaration of public entry points to the low-level API
  *
@@ -1138,7 +1138,7 @@ int YAPI_FUNCTION_EXPORT yapiGetNextHubRef(int ref);
 int YAPI_FUNCTION_EXPORT yapiGetHubStrAttr(int ref, const char* attrname, char *outval, int buffersize, int* fullsize);
 /*
  * yapiGetHubStrAttr_internal return the string attribute for a hub.
- *  ref is allways >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
+ *  ref is always >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
  *  reserved for USB.
  *  returns a negative number on error or the value.
  */
@@ -1146,7 +1146,7 @@ int YAPI_FUNCTION_EXPORT yapiGetHubStrAttr(int ref, const char* attrname, char *
 int YAPI_FUNCTION_EXPORT yapiGetHubIntAttr(int ref, const char* attrname);
 /*
  * yapiGetHubStrAttr_internal return the string attribute for a hub.
- *  ref is allways >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
+ *  ref is always >0. form 0 ot NBMAX_NET_HUB it's an network hub. NBMAX_NET_HUB is
  *  reserved for USB.
  *  returns a negative number on error or 0.
  */

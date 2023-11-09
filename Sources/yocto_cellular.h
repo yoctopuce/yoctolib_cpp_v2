@@ -1,6 +1,6 @@
 /*********************************************************************
  *
- * $Id: yocto_cellular.h 50326 2022-07-01 09:33:24Z seb $
+ * $Id: yocto_cellular.h 57635 2023-11-03 10:25:43Z seb $
  *
  * Declares yFindCellular(), the high-level API for Cellular functions
  *
@@ -207,7 +207,7 @@ public:
 //--- (generated code: YCellular declaration)
 /**
  * YCellular Class: cellular interface control interface, available for instance in the
- * YoctoHub-GSM-2G, the YoctoHub-GSM-3G-EU, the YoctoHub-GSM-3G-NA or the YoctoHub-GSM-4G
+ * YoctoHub-GSM-2G, the YoctoHub-GSM-3G-EU, the YoctoHub-GSM-3G-NA or the YoctoHub-GSM-4G.
  *
  * The YCellular class provides control over cellular network parameters
  * and status for devices that are GSM-enabled.

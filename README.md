@@ -1,6 +1,13 @@
 Yoctopuce library for C++ v2.0 (Preview)
 ========================================
 
+> [!WARNING]
+> This repository is deprecated. This repository v2.0 has been 
+> merged to the official repository. 
+> 
+> Please use main repository:
+> https://github.com/yoctopuce/yoctolib_cpp
+
 ## License information
 
 Copyright (C) 2011 and beyond by Yoctopuce Sarl, Switzerland.
